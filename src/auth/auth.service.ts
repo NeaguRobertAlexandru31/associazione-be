@@ -1,9 +1,17 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  GoneException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { AdminRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
+import { RegisterWithTokenDto } from './dto/register-with-token.dto';
 
 @Injectable()
 export class AuthService {
@@ -12,62 +20,71 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(dto: RegisterDto) {
-    const existing = await this.prisma.adminUser.findUnique({
-      where: { email: dto.email },
-    });
-
-    if (existing) {
-      throw new ConflictException('Email già in uso');
-    }
-
-    const passwordHash = await bcrypt.hash(dto.password, 10);
-
-    const admin = await this.prisma.adminUser.create({
-      data: {
-        name: dto.name,
-        email: dto.email,
-        passwordHash,
-      },
-    });
-
-    const payload = { sub: admin.id, email: admin.email, name: admin.name };
-    const token = this.jwtService.sign(payload);
-
-    return {
-      access_token: token,
-      admin: {
-        id: admin.id,
-        name: admin.name,
-        email: admin.email,
-      },
-    };
-  }
-
   async login(dto: LoginDto) {
     const admin = await this.prisma.adminUser.findUnique({
       where: { email: dto.email },
     });
 
-    if (!admin) {
-      throw new UnauthorizedException('Credenziali non valide');
+    if (!admin) throw new UnauthorizedException('Credenziali non valide');
+
+    const valid = await bcrypt.compare(dto.password, admin.passwordHash);
+    if (!valid) throw new UnauthorizedException('Credenziali non valide');
+
+    return { access_token: this.sign(admin), admin: this.toPublic(admin) };
+  }
+
+  async createInvite(adminId: string, role: AdminRole) {
+    if (role !== AdminRole.SUPERADMIN) {
+      throw new ForbiddenException('Solo il superadmin può generare inviti');
     }
 
-    const passwordValid = await bcrypt.compare(dto.password, admin.passwordHash);
-    if (!passwordValid) {
-      throw new UnauthorizedException('Credenziali non valide');
-    }
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const invite = await this.prisma.adminInvite.create({
+      data: { createdById: adminId, expiresAt },
+    });
 
-    const payload = { sub: admin.id, email: admin.email, name: admin.name };
-    const token = this.jwtService.sign(payload);
+    return { token: invite.token };
+  }
 
-    return {
-      access_token: token,
-      admin: {
-        id: admin.id,
-        name: admin.name,
-        email: admin.email,
-      },
-    };
+  async registerWithToken(dto: RegisterWithTokenDto) {
+    const invite = await this.prisma.adminInvite.findUnique({
+      where: { token: dto.token },
+    });
+
+    if (!invite) throw new NotFoundException('Link di invito non valido');
+    if (invite.usedAt) throw new GoneException('Link di invito già utilizzato');
+    if (invite.expiresAt < new Date()) throw new GoneException('Link di invito scaduto');
+
+    const existing = await this.prisma.adminUser.findUnique({
+      where: { email: dto.email },
+    });
+    if (existing) throw new ConflictException('Email già in uso');
+
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+
+    const [admin] = await this.prisma.$transaction([
+      this.prisma.adminUser.create({
+        data: { name: dto.name, email: dto.email, passwordHash, role: AdminRole.ADMIN },
+      }),
+      this.prisma.adminInvite.update({
+        where: { token: dto.token },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return { access_token: this.sign(admin), admin: this.toPublic(admin) };
+  }
+
+  private sign(admin: { id: string; email: string; name: string; role: AdminRole }) {
+    return this.jwtService.sign({
+      sub: admin.id,
+      email: admin.email,
+      name: admin.name,
+      role: admin.role,
+    });
+  }
+
+  private toPublic(admin: { id: string; name: string; email: string; role: AdminRole }) {
+    return { id: admin.id, name: admin.name, email: admin.email, role: admin.role };
   }
 }

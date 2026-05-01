@@ -123,11 +123,28 @@ model NewsletterSubscriber {
   createdAt DateTime @default(now())
 }
 
+enum AdminRole {
+  SUPERADMIN
+  ADMIN
+}
+
 model AdminUser {
-  id           String   @id @default(uuid())
+  id           String        @id @default(uuid())
   name         String
-  email        String   @unique
+  email        String        @unique
   passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  role         AdminRole     @default(ADMIN)
+  invitesSent  AdminInvite[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model AdminInvite {
+  id          String    @id @default(uuid())
+  token       String    @unique @default(uuid())
+  createdBy   AdminUser @relation(fields: [createdById], references: [id])
+  createdById String
+  usedAt      DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
 }
