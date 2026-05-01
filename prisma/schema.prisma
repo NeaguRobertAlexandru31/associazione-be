@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SubscriptionType {
+  simpatizzante
+  sostenitore
+  benemerito
+}
+
+enum ProjectCategory {
+  cultura
+  tradizione
+  sociale
+  educazione
+}
+
+enum ProjectStatus {
+  ongoing
+  completed
+}
+
+enum DonationFrequency {
+  once
+  monthly
+}
+
+enum DonationMethod {
+  card
+  bank
+}
+
+model Member {
+  id           String           @id @default(uuid())
+  name         String
+  email        String           @unique
+  subscription SubscriptionType
+  profileImage String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  donations    Donation[]
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  name        String
+  date        DateTime
+  time        String
+  location    String
+  description String?
+  images      String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Article {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  categories  String[]
+  images      String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Project {
+  id          String          @id @default(uuid())
+  title       String
+  description String
+  category    ProjectCategory
+  status      ProjectStatus
+  images      String[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model Product {
+  id            String   @id @default(uuid())
+  title         String
+  description   String
+  category      String
+  author        String?
+  price         Decimal
+  originalPrice Decimal?
+  isNew         Boolean?
+  images        String[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Donation {
+  id              String            @id @default(uuid())
+  donorName       String?
+  donorEmail      String?
+  amount          Decimal
+  frequency       DonationFrequency
+  method          DonationMethod
+  stripeSessionId String?
+  memberId        String?
+  member          Member?           @relation(fields: [memberId], references: [id])
+  createdAt       DateTime          @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model AdminUser {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
