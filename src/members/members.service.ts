@@ -14,13 +14,15 @@ export class MembersService {
       this.prisma.member.findMany({
         select: {
           id: true,
-          name: true,
+          firstName: true,
+          lastName: true,
           email: true,
-          subscription: true,
-          profileImage: true,
+          category: true,
+          status: true,
+          membershipYear: true,
           createdAt: true,
         },
-        orderBy: { name: 'asc' },
+        orderBy: { lastName: 'asc' },
       }),
     ]);
 

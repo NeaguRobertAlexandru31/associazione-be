@@ -9,10 +9,39 @@ datasource db {
   provider = "postgresql"
 }
 
-enum SubscriptionType {
-  simpatizzante
+enum MemberCategory {
+  ordinario
+  under26
   sostenitore
-  benemerito
+}
+
+enum MemberGender {
+  m
+  f
+  altro
+}
+
+enum DocType {
+  ci
+  passaporto
+  patente
+}
+
+enum MemberStatus {
+  in_attesa_pagamento
+  pagamento_in_corso
+  attivo
+  rifiutato
+}
+
+enum PaymentMethod {
+  online
+  contanti
+}
+
+enum GuardianRelation {
+  genitore
+  tutore_legale
 }
 
 enum ProjectCategory {
@@ -38,14 +67,49 @@ enum DonationMethod {
 }
 
 model Member {
-  id           String           @id @default(uuid())
-  name         String
-  email        String           @unique
-  subscription SubscriptionType
-  profileImage String?
-  createdAt    DateTime         @default(now())
-  updatedAt    DateTime         @updatedAt
-  donations    Donation[]
+  id                 String        @id @default(uuid())
+  isMinor            Boolean
+  category           MemberCategory
+  firstName          String
+  lastName           String
+  fiscalCode         String
+  birthDate          DateTime
+  birthPlace         String
+  gender             MemberGender
+  docType            DocType
+  docNumber          String
+  docExpiry          DateTime
+  email              String
+  phone              String
+  addressStreet      String
+  addressZip         String
+  addressCity        String
+  addressProvince    String
+  status             MemberStatus  @default(in_attesa_pagamento)
+  membershipYear     Int
+  paymentMethod      PaymentMethod
+  privacyBase        Boolean
+  privacyNewsletter  Boolean       @default(false)
+  privacyThirdParties Boolean      @default(false)
+  guardian           Guardian?
+  donations          Donation[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  @@unique([fiscalCode, membershipYear])
+}
+
+model Guardian {
+  id         String          @id @default(uuid())
+  memberId   String          @unique
+  member     Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  firstName  String
+  lastName   String
+  fiscalCode String
+  relation   GuardianRelation
+  docType    DocType
+  docNumber  String
+  docExpiry  DateTime
 }
 
 model Event {
