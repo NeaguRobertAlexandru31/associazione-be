@@ -114,6 +114,7 @@ model Guardian {
 
 model Event {
   id          String   @id @default(uuid())
+  slug        String?  @unique
   name        String
   date        DateTime
   time        String
@@ -178,6 +179,7 @@ model ContactMessage {
   email     String
   subject   String?
   message   String
+  read      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 
