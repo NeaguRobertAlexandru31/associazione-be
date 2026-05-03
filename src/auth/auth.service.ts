@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   GoneException,
@@ -12,6 +13,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterWithTokenDto } from './dto/register-with-token.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -73,6 +75,51 @@ export class AuthService {
     ]);
 
     return { access_token: this.sign(admin), admin: this.toPublic(admin) };
+  }
+
+  async getProfile(id: string) {
+    const admin = await this.prisma.adminUser.findUnique({ where: { id } });
+    if (!admin) throw new NotFoundException('Utente non trovato');
+    return this.toPublic(admin);
+  }
+
+  async updateProfile(id: string, dto: UpdateProfileDto) {
+    const admin = await this.prisma.adminUser.findUnique({ where: { id } });
+    if (!admin) throw new NotFoundException('Utente non trovato');
+
+    if (dto.password) {
+      if (!dto.currentPassword) throw new BadRequestException('Inserisci la password attuale per cambiarla');
+      const valid = await bcrypt.compare(dto.currentPassword, admin.passwordHash);
+      if (!valid) throw new UnauthorizedException('Password attuale non corretta');
+    }
+
+    if (dto.email && dto.email !== admin.email) {
+      const existing = await this.prisma.adminUser.findUnique({ where: { email: dto.email } });
+      if (existing) throw new ConflictException('Email già in uso');
+    }
+
+    const data: Record<string, unknown> = {};
+    if (dto.name)     data['name']         = dto.name;
+    if (dto.email)    data['email']        = dto.email;
+    if (dto.password) data['passwordHash'] = await bcrypt.hash(dto.password, 10);
+
+    const updated = await this.prisma.adminUser.update({ where: { id }, data });
+    return { access_token: this.sign(updated), admin: this.toPublic(updated) };
+  }
+
+  async deleteProfile(id: string, currentPassword: string) {
+    const admin = await this.prisma.adminUser.findUnique({ where: { id } });
+    if (!admin) throw new NotFoundException('Utente non trovato');
+
+    const valid = await bcrypt.compare(currentPassword, admin.passwordHash);
+    if (!valid) throw new UnauthorizedException('Password non corretta');
+
+    if (admin.role === AdminRole.SUPERADMIN) {
+      const count = await this.prisma.adminUser.count({ where: { role: AdminRole.SUPERADMIN } });
+      if (count <= 1) throw new ForbiddenException('Non puoi eliminare l\'unico Presidente');
+    }
+
+    await this.prisma.adminUser.delete({ where: { id } });
   }
 
   private sign(admin: { id: string; email: string; name: string; role: AdminRole }) {
