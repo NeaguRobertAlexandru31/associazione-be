@@ -11,9 +11,10 @@ import { UploadsModule } from './uploads/uploads.module';
 import { ContactModule } from './contact/contact.module';
 import { ArticlesModule } from './articles/articles.module';
 import { ProjectsModule } from './projects/projects.module';
+import { SiteSettingsModule } from './site-settings/site-settings.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, MembersModule, RegistrationsModule, ActivityModule, EventsModule, UploadsModule, ContactModule, ArticlesModule, ProjectsModule],
+  imports: [PrismaModule, AuthModule, MembersModule, RegistrationsModule, ActivityModule, EventsModule, UploadsModule, ContactModule, ArticlesModule, ProjectsModule, SiteSettingsModule],
   controllers: [AppController],
   providers: [AppService],
 })

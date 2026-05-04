@@ -6,73 +6,90 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 import { randomBytes } from 'crypto';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const sharp = require('sharp') as typeof import('sharp');
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { R2Service } from '../r2/r2.service';
 
-const imageFilter = (req: any, file: Express.Multer.File, cb: any) => {
-  const allowed = /image\/(jpeg|png|webp|gif)/;
-  allowed.test(file.mimetype) ? cb(null, true) : cb(null, false);
+const imageFilter = (_req: any, file: Express.Multer.File, cb: any) => {
+  /image\/(jpeg|png|webp|gif)/.test(file.mimetype) ? cb(null, true) : cb(null, false);
 };
+
+const memStorage = memoryStorage();
 
 @Controller('uploads')
 @UseGuards(JwtAuthGuard)
 export class UploadsController {
+  constructor(private readonly r2: R2Service) {}
+
+  private async processAndUpload(
+    files: Express.Multer.File[],
+    folder: string,
+  ): Promise<string[]> {
+    return Promise.all(
+      (files ?? []).map(async file => {
+        const webpBuffer = await sharp(file.buffer)
+          .resize({ width: 1920, withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toBuffer();
+
+        const key = `${folder}/${randomBytes(10).toString('hex')}.webp`;
+        return this.r2.upload(key, webpBuffer);
+      }),
+    );
+  }
+
   @Post('events')
   @UseInterceptors(
     FilesInterceptor('files', 10, {
-      storage: diskStorage({
-        destination: './uploads/events',
-        filename: (req, file, cb) => {
-          const unique = randomBytes(10).toString('hex');
-          cb(null, `${unique}${extname(file.originalname)}`);
-        },
-      }),
+      storage:    memStorage,
       fileFilter: imageFilter,
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits:     { fileSize: 15 * 1024 * 1024 },
     }),
   )
-  uploadEvents(@UploadedFiles() files: Express.Multer.File[]) {
-    const urls = (files ?? []).map(f => `/uploads/events/${f.filename}`);
+  async uploadEvents(@UploadedFiles() files: Express.Multer.File[]) {
+    const urls = await this.processAndUpload(files, 'events');
     return { urls };
   }
 
   @Post('articles')
   @UseInterceptors(
     FilesInterceptor('files', 10, {
-      storage: diskStorage({
-        destination: './uploads/articles',
-        filename: (req, file, cb) => {
-          const unique = randomBytes(10).toString('hex');
-          cb(null, `${unique}${extname(file.originalname)}`);
-        },
-      }),
+      storage:    memStorage,
       fileFilter: imageFilter,
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits:     { fileSize: 15 * 1024 * 1024 },
     }),
   )
-  uploadArticles(@UploadedFiles() files: Express.Multer.File[]) {
-    const urls = (files ?? []).map(f => `/uploads/articles/${f.filename}`);
+  async uploadArticles(@UploadedFiles() files: Express.Multer.File[]) {
+    const urls = await this.processAndUpload(files, 'articles');
     return { urls };
   }
 
   @Post('projects')
   @UseInterceptors(
     FilesInterceptor('files', 10, {
-      storage: diskStorage({
-        destination: './uploads/projects',
-        filename: (req, file, cb) => {
-          const unique = randomBytes(10).toString('hex');
-          cb(null, `${unique}${extname(file.originalname)}`);
-        },
-      }),
+      storage:    memStorage,
       fileFilter: imageFilter,
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits:     { fileSize: 15 * 1024 * 1024 },
     }),
   )
-  uploadProjects(@UploadedFiles() files: Express.Multer.File[]) {
-    const urls = (files ?? []).map(f => `/uploads/projects/${f.filename}`);
+  async uploadProjects(@UploadedFiles() files: Express.Multer.File[]) {
+    const urls = await this.processAndUpload(files, 'projects');
+    return { urls };
+  }
+
+  @Post('settings')
+  @UseInterceptors(
+    FilesInterceptor('files', 1, {
+      storage:    memStorage,
+      fileFilter: imageFilter,
+      limits:     { fileSize: 15 * 1024 * 1024 },
+    }),
+  )
+  async uploadSettings(@UploadedFiles() files: Express.Multer.File[]) {
+    const urls = await this.processAndUpload(files, 'settings');
     return { urls };
   }
 }

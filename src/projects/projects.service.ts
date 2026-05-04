@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { R2Service } from '../r2/r2.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 
 const PROJECT_SELECT = {
@@ -15,7 +16,10 @@ const PROJECT_SELECT = {
 
 @Injectable()
 export class ProjectsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly r2:     R2Service,
+  ) {}
 
   getAll() {
     return this.prisma.project.findMany({
@@ -62,10 +66,16 @@ export class ProjectsService {
   async delete(id: string) {
     const project = await this.prisma.project.findUnique({ where: { id } });
     if (!project) throw new NotFoundException('Progetto non trovato');
+    await this.r2.deleteMany(project.images);
     return this.prisma.project.delete({ where: { id } });
   }
 
-  deleteMany(ids: string[]) {
+  async deleteMany(ids: string[]) {
+    const projects = await this.prisma.project.findMany({
+      where: { id: { in: ids } },
+      select: { images: true },
+    });
+    await this.r2.deleteMany(projects.flatMap(p => p.images));
     return this.prisma.project.deleteMany({ where: { id: { in: ids } } });
   }
 }

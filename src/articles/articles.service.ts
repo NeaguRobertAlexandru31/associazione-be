@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { R2Service } from '../r2/r2.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 
 const ARTICLE_SELECT = {
@@ -14,7 +15,10 @@ const ARTICLE_SELECT = {
 
 @Injectable()
 export class ArticlesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly r2:     R2Service,
+  ) {}
 
   getAll() {
     return this.prisma.article.findMany({
@@ -47,10 +51,16 @@ export class ArticlesService {
   async delete(id: string) {
     const article = await this.prisma.article.findUnique({ where: { id } });
     if (!article) throw new NotFoundException('Articolo non trovato');
+    await this.r2.deleteMany(article.images);
     return this.prisma.article.delete({ where: { id } });
   }
 
-  deleteMany(ids: string[]) {
+  async deleteMany(ids: string[]) {
+    const articles = await this.prisma.article.findMany({
+      where: { id: { in: ids } },
+      select: { images: true },
+    });
+    await this.r2.deleteMany(articles.flatMap(a => a.images));
     return this.prisma.article.deleteMany({ where: { id: { in: ids } } });
   }
 }

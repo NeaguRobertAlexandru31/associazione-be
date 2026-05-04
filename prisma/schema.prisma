@@ -205,6 +205,12 @@ model AdminUser {
   updatedAt    DateTime      @updatedAt
 }
 
+model SiteSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 model AdminInvite {
   id          String    @id @default(uuid())
   token       String    @unique @default(uuid())

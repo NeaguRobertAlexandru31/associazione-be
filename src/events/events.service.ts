@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { R2Service } from '../r2/r2.service';
 import { CreateEventDto } from './dto/create-event.dto';
 
 function slugify(text: string): string {
@@ -27,7 +28,10 @@ const EVENT_SELECT = {
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly r2:     R2Service,
+  ) {}
 
   getAll() {
     return this.prisma.event.findMany({
@@ -74,7 +78,10 @@ export class EventsService {
     });
   }
 
-  delete(id: string) {
+  async delete(id: string) {
+    const event = await this.prisma.event.findUnique({ where: { id } });
+    if (!event) throw new NotFoundException('Evento non trovato');
+    await this.r2.deleteMany(event.images);
     return this.prisma.event.delete({ where: { id } });
   }
 }
