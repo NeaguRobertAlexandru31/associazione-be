@@ -56,4 +56,23 @@ export class UploadsController {
     const urls = (files ?? []).map(f => `/uploads/articles/${f.filename}`);
     return { urls };
   }
+
+  @Post('projects')
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      storage: diskStorage({
+        destination: './uploads/projects',
+        filename: (req, file, cb) => {
+          const unique = randomBytes(10).toString('hex');
+          cb(null, `${unique}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: imageFilter,
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  uploadProjects(@UploadedFiles() files: Express.Multer.File[]) {
+    const urls = (files ?? []).map(f => `/uploads/projects/${f.filename}`);
+    return { urls };
+  }
 }
