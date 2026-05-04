@@ -9,9 +9,10 @@ import { ActivityModule } from './activity/activity.module';
 import { EventsModule } from './events/events.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { ContactModule } from './contact/contact.module';
+import { ArticlesModule } from './articles/articles.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, MembersModule, RegistrationsModule, ActivityModule, EventsModule, UploadsModule, ContactModule],
+  imports: [PrismaModule, AuthModule, MembersModule, RegistrationsModule, ActivityModule, EventsModule, UploadsModule, ContactModule, ArticlesModule],
   controllers: [AppController],
   providers: [AppService],
 })

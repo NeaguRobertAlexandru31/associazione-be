@@ -2,11 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface ActivityDto {
-  type: string;
-  icon: string;
-  text: string;
+  id:    string;
+  type:  string;
+  icon:  string;
+  text:  string;
   color: string;
-  date: string;
+  date:  string;
 }
 
 const LOOKBACK_DAYS = 30;
@@ -28,6 +29,7 @@ export class ActivityService {
             OR: [{ createdAt: { gte: since } }, { updatedAt: { gte: since } }],
           },
           select: {
+            id: true,
             firstName: true,
             lastName: true,
             status: true,
@@ -39,36 +41,37 @@ export class ActivityService {
           where: {
             OR: [{ createdAt: { gte: since } }, { updatedAt: { gte: since } }],
           },
-          select: { name: true, createdAt: true, updatedAt: true },
+          select: { id: true, name: true, createdAt: true, updatedAt: true },
         }),
         this.prisma.article.findMany({
           where: {
             OR: [{ createdAt: { gte: since } }, { updatedAt: { gte: since } }],
           },
-          select: { name: true, createdAt: true, updatedAt: true },
+          select: { id: true, name: true, createdAt: true, updatedAt: true },
         }),
         this.prisma.donation.findMany({
           where: { createdAt: { gte: since } },
-          select: { donorName: true, amount: true, createdAt: true },
+          select: { id: true, donorName: true, amount: true, createdAt: true },
         }),
         this.prisma.contactMessage.findMany({
           where: { createdAt: { gte: since } },
-          select: { name: true, createdAt: true },
+          select: { id: true, name: true, createdAt: true },
         }),
         this.prisma.newsletterSubscriber.findMany({
           where: { createdAt: { gte: since } },
-          select: { email: true, createdAt: true },
+          select: { id: true, email: true, createdAt: true },
         }),
       ]);
 
     for (const m of members) {
       if (m.createdAt >= since) {
         items.push({
-          type: 'member_registered',
-          icon: 'person_add',
-          text: `Nuova iscrizione: ${m.firstName} ${m.lastName}`,
+          id:    `member_registered_${m.id}`,
+          type:  'member_registered',
+          icon:  'person_add',
+          text:  `Nuova iscrizione: ${m.firstName} ${m.lastName}`,
           color: 'text-primary',
-          date: m.createdAt.toISOString(),
+          date:  m.createdAt.toISOString(),
         });
       }
       if (
@@ -77,11 +80,12 @@ export class ActivityService {
         m.updatedAt >= since
       ) {
         items.push({
-          type: 'member_activated',
-          icon: 'how_to_reg',
-          text: `${m.firstName} ${m.lastName} è diventato socio`,
+          id:    `member_activated_${m.id}`,
+          type:  'member_activated',
+          icon:  'how_to_reg',
+          text:  `${m.firstName} ${m.lastName} è diventato socio`,
           color: 'text-primary',
-          date: m.updatedAt.toISOString(),
+          date:  m.updatedAt.toISOString(),
         });
       }
     }
@@ -89,11 +93,12 @@ export class ActivityService {
     for (const e of events) {
       if (e.createdAt >= since) {
         items.push({
-          type: 'event_created',
-          icon: 'event',
-          text: `Nuovo evento: ${e.name}`,
+          id:    `event_created_${e.id}`,
+          type:  'event_created',
+          icon:  'event',
+          text:  `Nuovo evento: ${e.name}`,
           color: 'text-secondary',
-          date: e.createdAt.toISOString(),
+          date:  e.createdAt.toISOString(),
         });
       }
       if (
@@ -101,11 +106,12 @@ export class ActivityService {
         e.updatedAt >= since
       ) {
         items.push({
-          type: 'event_updated',
-          icon: 'edit_calendar',
-          text: `Evento aggiornato: ${e.name}`,
+          id:    `event_updated_${e.id}`,
+          type:  'event_updated',
+          icon:  'edit_calendar',
+          text:  `Evento aggiornato: ${e.name}`,
           color: 'text-secondary',
-          date: e.updatedAt.toISOString(),
+          date:  e.updatedAt.toISOString(),
         });
       }
     }
@@ -113,11 +119,12 @@ export class ActivityService {
     for (const a of articles) {
       if (a.createdAt >= since) {
         items.push({
-          type: 'article_published',
-          icon: 'newspaper',
-          text: `Articolo pubblicato: ${a.name}`,
+          id:    `article_published_${a.id}`,
+          type:  'article_published',
+          icon:  'newspaper',
+          text:  `Articolo pubblicato: ${a.name}`,
           color: 'text-on-surface-variant',
-          date: a.createdAt.toISOString(),
+          date:  a.createdAt.toISOString(),
         });
       }
       if (
@@ -125,42 +132,46 @@ export class ActivityService {
         a.updatedAt >= since
       ) {
         items.push({
-          type: 'article_updated',
-          icon: 'edit_note',
-          text: `Articolo aggiornato: ${a.name}`,
+          id:    `article_updated_${a.id}`,
+          type:  'article_updated',
+          icon:  'edit_note',
+          text:  `Articolo aggiornato: ${a.name}`,
           color: 'text-on-surface-variant',
-          date: a.updatedAt.toISOString(),
+          date:  a.updatedAt.toISOString(),
         });
       }
     }
 
     for (const d of donations) {
       items.push({
-        type: 'donation',
-        icon: 'volunteer_activism',
-        text: `Donazione €${Number(d.amount)} da ${d.donorName ?? 'Anonimo'}`,
+        id:    `donation_${d.id}`,
+        type:  'donation',
+        icon:  'volunteer_activism',
+        text:  `Donazione €${Number(d.amount)} da ${d.donorName ?? 'Anonimo'}`,
         color: 'text-primary',
-        date: d.createdAt.toISOString(),
+        date:  d.createdAt.toISOString(),
       });
     }
 
     for (const c of messages) {
       items.push({
-        type: 'contact_message',
-        icon: 'mail',
-        text: `Nuovo messaggio da ${c.name}`,
+        id:    `contact_message_${c.id}`,
+        type:  'contact_message',
+        icon:  'mail',
+        text:  `Nuovo messaggio da ${c.name}`,
         color: 'text-secondary',
-        date: c.createdAt.toISOString(),
+        date:  c.createdAt.toISOString(),
       });
     }
 
     for (const n of subscribers) {
       items.push({
-        type: 'newsletter',
-        icon: 'mark_email_read',
-        text: `Nuova iscrizione newsletter: ${n.email}`,
+        id:    `newsletter_${n.id}`,
+        type:  'newsletter',
+        icon:  'mark_email_read',
+        text:  `Nuova iscrizione newsletter: ${n.email}`,
         color: 'text-on-surface-variant',
-        date: n.createdAt.toISOString(),
+        date:  n.createdAt.toISOString(),
       });
     }
 

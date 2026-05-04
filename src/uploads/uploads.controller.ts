@@ -30,11 +30,30 @@ export class UploadsController {
         },
       }),
       fileFilter: imageFilter,
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+      limits: { fileSize: 5 * 1024 * 1024 },
     }),
   )
-  upload(@UploadedFiles() files: Express.Multer.File[]) {
+  uploadEvents(@UploadedFiles() files: Express.Multer.File[]) {
     const urls = (files ?? []).map(f => `/uploads/events/${f.filename}`);
+    return { urls };
+  }
+
+  @Post('articles')
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      storage: diskStorage({
+        destination: './uploads/articles',
+        filename: (req, file, cb) => {
+          const unique = randomBytes(10).toString('hex');
+          cb(null, `${unique}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: imageFilter,
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  uploadArticles(@UploadedFiles() files: Express.Multer.File[]) {
+    const urls = (files ?? []).map(f => `/uploads/articles/${f.filename}`);
     return { urls };
   }
 }
