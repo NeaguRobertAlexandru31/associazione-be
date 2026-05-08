@@ -92,4 +92,17 @@ export class UploadsController {
     const urls = await this.processAndUpload(files, 'settings');
     return { urls };
   }
+
+  @Post('placeholders')
+  @UseInterceptors(
+    FilesInterceptor('files', 1, {
+      storage:    memStorage,
+      fileFilter: imageFilter,
+      limits:     { fileSize: 15 * 1024 * 1024 },
+    }),
+  )
+  async uploadPlaceholders(@UploadedFiles() files: Express.Multer.File[]) {
+    const urls = await this.processAndUpload(files, 'placeholders');
+    return { urls };
+  }
 }
