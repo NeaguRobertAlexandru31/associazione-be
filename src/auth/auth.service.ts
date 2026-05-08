@@ -8,7 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { AdminRole } from '@prisma/client';
+import { AdminRole, MemberStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
@@ -48,6 +48,15 @@ export class AuthService {
     return { token: invite.token };
   }
 
+  async checkMember(email: string): Promise<{ isMember: boolean; name?: string }> {
+    const member = await this.prisma.member.findFirst({
+      where: { email, status: { not: MemberStatus.rifiutato } },
+      select: { firstName: true, lastName: true },
+    });
+    if (!member) return { isMember: false };
+    return { isMember: true, name: `${member.firstName} ${member.lastName}` };
+  }
+
   async registerWithToken(dto: RegisterWithTokenDto) {
     const invite = await this.prisma.adminInvite.findUnique({
       where: { token: dto.token },
@@ -56,6 +65,11 @@ export class AuthService {
     if (!invite) throw new NotFoundException('Link di invito non valido');
     if (invite.usedAt) throw new GoneException('Link di invito già utilizzato');
     if (invite.expiresAt < new Date()) throw new GoneException('Link di invito scaduto');
+
+    const isMember = await this.prisma.member.findFirst({
+      where: { email: dto.email, status: { not: MemberStatus.rifiutato } },
+    });
+    if (!isMember) throw new BadRequestException('Per accedere al pannello devi prima registrarti come socio');
 
     const existing = await this.prisma.adminUser.findUnique({
       where: { email: dto.email },

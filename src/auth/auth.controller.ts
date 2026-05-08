@@ -14,6 +14,11 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
+  @Post('check-member')
+  checkMember(@Body('email') email: string) {
+    return this.authService.checkMember(email);
+  }
+
   @Post('register')
   register(@Body() dto: RegisterWithTokenDto) {
     return this.authService.registerWithToken(dto);
