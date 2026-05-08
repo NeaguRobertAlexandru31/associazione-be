@@ -10,6 +10,7 @@ const PROJECT_SELECT = {
   category:    true,
   status:      true,
   images:      true,
+  cover:       true,
   createdAt:   true,
   updatedAt:   true,
 } as const;
@@ -42,6 +43,7 @@ export class ProjectsService {
         category:    dto.category,
         status:      dto.status,
         images:      dto.images ?? [],
+        cover:       dto.cover,
       },
       select: PROJECT_SELECT,
     });
@@ -58,6 +60,7 @@ export class ProjectsService {
         ...(dto.category    !== undefined && { category:    dto.category }),
         ...(dto.status      !== undefined && { status:      dto.status }),
         ...(dto.images      !== undefined && { images:      dto.images }),
+        ...(dto.cover       !== undefined && { cover:       dto.cover }),
       },
       select: PROJECT_SELECT,
     });
@@ -66,16 +69,18 @@ export class ProjectsService {
   async delete(id: string) {
     const project = await this.prisma.project.findUnique({ where: { id } });
     if (!project) throw new NotFoundException('Progetto non trovato');
-    await this.r2.deleteMany(project.images);
+    const toDelete = [...project.images];
+    if (project.cover) toDelete.push(project.cover);
+    await this.r2.deleteMany(toDelete);
     return this.prisma.project.delete({ where: { id } });
   }
 
   async deleteMany(ids: string[]) {
     const projects = await this.prisma.project.findMany({
       where: { id: { in: ids } },
-      select: { images: true },
+      select: { images: true, cover: true },
     });
-    await this.r2.deleteMany(projects.flatMap(p => p.images));
+    await this.r2.deleteMany(projects.flatMap(p => [...p.images, ...(p.cover ? [p.cover] : [])]));
     return this.prisma.project.deleteMany({ where: { id: { in: ids } } });
   }
 }

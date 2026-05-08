@@ -1,16 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { R2Service } from '../r2/r2.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 
 const ARTICLE_SELECT = {
-  id:          true,
-  name:        true,
-  description: true,
-  categories:  true,
-  images:      true,
-  createdAt:   true,
-  updatedAt:   true,
+  id:         true,
+  name:       true,
+  categories: true,
+  blocks:     true,
+  cover:      true,
+  createdAt:  true,
+  updatedAt:  true,
 } as const;
 
 @Injectable()
@@ -39,10 +40,10 @@ export class ArticlesService {
   create(dto: CreateArticleDto) {
     return this.prisma.article.create({
       data: {
-        name:        dto.name,
-        description: dto.description,
-        categories:  dto.categories ?? [],
-        images:      dto.images ?? [],
+        name:       dto.name,
+        categories: dto.categories ?? [],
+        blocks:     dto.blocks as unknown as Prisma.InputJsonValue,
+        cover:      dto.cover,
       },
       select: ARTICLE_SELECT,
     });
@@ -51,16 +52,29 @@ export class ArticlesService {
   async delete(id: string) {
     const article = await this.prisma.article.findUnique({ where: { id } });
     if (!article) throw new NotFoundException('Articolo non trovato');
-    await this.r2.deleteMany(article.images);
+    const images = this.extractImages(article.blocks, article.cover);
+    await this.r2.deleteMany(images);
     return this.prisma.article.delete({ where: { id } });
   }
 
   async deleteMany(ids: string[]) {
     const articles = await this.prisma.article.findMany({
       where: { id: { in: ids } },
-      select: { images: true },
+      select: { blocks: true, cover: true },
     });
-    await this.r2.deleteMany(articles.flatMap(a => a.images));
+    const images = articles.flatMap(a => this.extractImages(a.blocks, a.cover));
+    await this.r2.deleteMany(images);
     return this.prisma.article.deleteMany({ where: { id: { in: ids } } });
+  }
+
+  private extractImages(blocks: Prisma.JsonValue, cover: string | null): string[] {
+    const urls: string[] = [];
+    if (cover) urls.push(cover);
+    if (Array.isArray(blocks)) {
+      for (const b of blocks as any[]) {
+        if (b?.image) urls.push(b.image as string);
+      }
+    }
+    return urls;
   }
 }

@@ -31,4 +31,8 @@ export class CreateProjectDto {
   @IsString({ each: true })
   @IsOptional()
   images?: string[];
+
+  @IsString()
+  @IsOptional()
+  cover?: string;
 }

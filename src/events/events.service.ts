@@ -24,6 +24,7 @@ const EVENT_SELECT = {
   location: true,
   description: true,
   images: true,
+  cover: true,
 } as const;
 
 @Injectable()
@@ -73,6 +74,7 @@ export class EventsService {
         location:    dto.location,
         description: dto.description,
         images:      dto.images ?? [],
+        cover:       dto.cover,
       },
       select: EVENT_SELECT,
     });
@@ -81,7 +83,9 @@ export class EventsService {
   async delete(id: string) {
     const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) throw new NotFoundException('Evento non trovato');
-    await this.r2.deleteMany(event.images);
+    const toDelete = [...event.images];
+    if (event.cover) toDelete.push(event.cover);
+    await this.r2.deleteMany(toDelete);
     return this.prisma.event.delete({ where: { id } });
   }
 }

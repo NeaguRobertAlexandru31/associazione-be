@@ -1,13 +1,26 @@
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray, IsNotEmpty, IsOptional, IsString, ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class ArticleBlockDto {
+  @IsString()
+  @IsOptional()
+  subtitle?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  paragraph: string;
+
+  @IsString()
+  @IsOptional()
+  image?: string;
+}
 
 export class CreateArticleDto {
   @IsString()
   @IsNotEmpty()
   name: string;
-
-  @IsString()
-  @IsNotEmpty()
-  description: string;
 
   @IsArray()
   @IsString({ each: true })
@@ -15,7 +28,11 @@ export class CreateArticleDto {
   categories?: string[];
 
   @IsArray()
-  @IsString({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => ArticleBlockDto)
+  blocks: ArticleBlockDto[];
+
+  @IsString()
   @IsOptional()
-  images?: string[];
+  cover?: string;
 }
