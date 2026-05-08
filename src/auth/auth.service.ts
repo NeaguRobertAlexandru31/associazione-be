@@ -10,11 +10,26 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { AdminRole, MemberStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import type { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterWithTokenDto } from './dto/register-with-token.dto';
 import { UpdateMyMemberDto } from './dto/update-my-member.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+
+const REFRESH_COOKIE = 'acr_refresh';
+const REFRESH_SECRET = () => process.env.JWT_REFRESH_SECRET ?? 'changeme-refresh';
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+function refreshCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: IS_PROD,
+    sameSite: (IS_PROD ? 'none' : 'lax') as 'none' | 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 giorni
+    path: '/',
+  };
+}
 
 @Injectable()
 export class AuthService {
@@ -23,17 +38,32 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async login(dto: LoginDto) {
-    const admin = await this.prisma.adminUser.findUnique({
-      where: { email: dto.email },
-    });
-
+  async login(dto: LoginDto, res: Response) {
+    const admin = await this.prisma.adminUser.findUnique({ where: { email: dto.email } });
     if (!admin) throw new UnauthorizedException('Credenziali non valide');
 
     const valid = await bcrypt.compare(dto.password, admin.passwordHash);
     if (!valid) throw new UnauthorizedException('Credenziali non valide');
 
+    res.cookie(REFRESH_COOKIE, this.signRefresh(admin), refreshCookieOptions());
     return { access_token: this.sign(admin), admin: this.toPublic(admin) };
+  }
+
+  async refresh(refreshToken: string | undefined) {
+    if (!refreshToken) throw new UnauthorizedException('Refresh token mancante');
+    let payload: { sub: string; email: string; name: string; role: AdminRole };
+    try {
+      payload = this.jwtService.verify(refreshToken, { secret: REFRESH_SECRET() });
+    } catch {
+      throw new UnauthorizedException('Refresh token non valido o scaduto');
+    }
+    const admin = await this.prisma.adminUser.findUnique({ where: { id: payload.sub } });
+    if (!admin) throw new UnauthorizedException('Utente non trovato');
+    return { access_token: this.sign(admin) };
+  }
+
+  clearRefreshCookie(res: Response) {
+    res.clearCookie(REFRESH_COOKIE, { httpOnly: true, secure: IS_PROD, sameSite: IS_PROD ? 'none' : 'lax', path: '/' });
   }
 
   async createInvite(adminId: string, role: AdminRole) {
@@ -58,7 +88,7 @@ export class AuthService {
     return { isMember: !!member };
   }
 
-  async registerWithToken(dto: RegisterWithTokenDto) {
+  async registerWithToken(dto: RegisterWithTokenDto, res: Response) {
     const invite = await this.prisma.adminInvite.findUnique({
       where: { token: dto.token },
     });
@@ -89,6 +119,7 @@ export class AuthService {
       }),
     ]);
 
+    res.cookie(REFRESH_COOKIE, this.signRefresh(admin), refreshCookieOptions());
     return { access_token: this.sign(admin), admin: this.toPublic(admin) };
   }
 
@@ -180,12 +211,14 @@ export class AuthService {
   }
 
   private sign(admin: { id: string; email: string; name: string; role: AdminRole }) {
-    return this.jwtService.sign({
-      sub: admin.id,
-      email: admin.email,
-      name: admin.name,
-      role: admin.role,
-    });
+    return this.jwtService.sign({ sub: admin.id, email: admin.email, name: admin.name, role: admin.role });
+  }
+
+  private signRefresh(admin: { id: string; email: string; name: string; role: AdminRole }) {
+    return this.jwtService.sign(
+      { sub: admin.id, email: admin.email, name: admin.name, role: admin.role },
+      { expiresIn: '7d', secret: REFRESH_SECRET() },
+    );
   }
 
   private toPublic(admin: { id: string; name: string; email: string; role: AdminRole }) {

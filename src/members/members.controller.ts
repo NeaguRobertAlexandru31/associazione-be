@@ -14,6 +14,11 @@ export class MembersController {
     return this.membersService.getAll();
   }
 
+  @Get('donation-stats')
+  getDonationStats() {
+    return this.membersService.getDonationStats();
+  }
+
   @Get('soci/:id')
   getSocio(@Param('id') id: string) {
     return this.membersService.getSocio(id);

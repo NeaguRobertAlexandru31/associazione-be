@@ -95,6 +95,28 @@ export class MembersService {
     return admin;
   }
 
+  async getDonationStats() {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const [all, month] = await Promise.all([
+      this.prisma.donation.aggregate({ _sum: { amount: true }, _count: { id: true } }),
+      this.prisma.donation.aggregate({
+        where: { createdAt: { gte: startOfMonth } },
+        _sum: { amount: true },
+        _count: { id: true },
+      }),
+    ]);
+
+    return {
+      count:           all._count.id,
+      total:           Number(all._sum.amount ?? 0),
+      thisMonthCount:  month._count.id,
+      thisMonthTotal:  Number(month._sum.amount ?? 0),
+    };
+  }
+
   async getAll() {
     const [direttivo, soci] = await Promise.all([
       this.prisma.adminUser.findMany({

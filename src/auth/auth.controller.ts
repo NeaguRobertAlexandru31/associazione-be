@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Patch, Post, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Patch, Post, Req, Res, Request, UseGuards } from '@nestjs/common';
+import type { Request as ExpressRequest, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterWithTokenDto } from './dto/register-with-token.dto';
@@ -11,18 +12,29 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    return this.authService.login(dto, res);
+  }
+
+  @Post('register')
+  register(@Body() dto: RegisterWithTokenDto, @Res({ passthrough: true }) res: Response) {
+    return this.authService.registerWithToken(dto, res);
+  }
+
+  @Post('refresh')
+  refresh(@Req() req: ExpressRequest) {
+    return this.authService.refresh(req.cookies?.['acr_refresh']);
+  }
+
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: Response) {
+    this.authService.clearRefreshCookie(res);
+    return { ok: true };
   }
 
   @Post('check-member')
   checkMember(@Body('email') email: string) {
     return this.authService.checkMember(email);
-  }
-
-  @Post('register')
-  register(@Body() dto: RegisterWithTokenDto) {
-    return this.authService.registerWithToken(dto);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -51,7 +63,9 @@ export class AuthController {
   deleteProfile(
     @Request() req: { user: { id: string } },
     @Body('currentPassword') currentPassword: string,
+    @Res({ passthrough: true }) res: Response,
   ) {
+    this.authService.clearRefreshCookie(res);
     return this.authService.deleteProfile(req.user.id, currentPassword);
   }
 
