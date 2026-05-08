@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { MemberStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { EncryptionService } from '../encryption/encryption.service';
 import { UpdateMemberMeDto } from './dto/update-member-me.dto';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class MemberAuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly enc: EncryptionService,
   ) {}
 
   async checkEmail(email: string): Promise<{ exists: boolean; hasPassword: boolean }> {
@@ -57,21 +59,23 @@ export class MemberAuthService {
   async getMe(memberId: string) {
     const member = await this.prisma.member.findUnique({ where: { id: memberId } });
     if (!member || member.deletedAt) throw new NotFoundException('Socio non trovato');
-    const { passwordHash: _, ...rest } = member as any;
-    return rest;
+    const { passwordHash: _, fiscalCodeHash: __, ...rest } = member as any;
+    return this.enc.decryptMember(rest);
   }
 
   async updateMe(memberId: string, dto: UpdateMemberMeDto) {
     const member = await this.prisma.member.findUnique({ where: { id: memberId } });
     if (!member || member.deletedAt) throw new NotFoundException('Socio non trovato');
 
-    const data: Record<string, unknown> = { ...dto };
-    if (dto.birthDate) data['birthDate'] = new Date(dto.birthDate);
-    if (dto.docExpiry)  data['docExpiry']  = new Date(dto.docExpiry);
+    const raw: Record<string, unknown> = { ...dto };
+    if (dto.birthDate) raw.birthDate = new Date(dto.birthDate);
+    if (dto.docExpiry)  raw.docExpiry  = new Date(dto.docExpiry);
+
+    const data = this.enc.encryptMember(raw);
 
     const updated = await this.prisma.member.update({ where: { id: memberId }, data });
-    const { passwordHash: _, ...rest } = updated as any;
-    return rest;
+    const { passwordHash: _, fiscalCodeHash: __, ...rest } = updated as any;
+    return this.enc.decryptMember(rest);
   }
 
   async deleteMe(memberId: string) {

@@ -1,16 +1,30 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { AdminRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { EncryptionService } from '../encryption/encryption.service';
 import { UpdateSocioDto } from './dto/update-socio.dto';
 
 @Injectable()
 export class MembersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly enc: EncryptionService,
+  ) {}
 
   async getSocio(id: string) {
-    const member = await this.prisma.member.findUnique({ where: { id } });
+    const member = await this.prisma.member.findUnique({
+      where: { id },
+      include: { guardian: true },
+    });
     if (!member || member.deletedAt) throw new NotFoundException('Socio non trovato');
-    return member;
+
+    const { passwordHash: _, fiscalCodeHash: __, ...rest } = member as any;
+    const decrypted = this.enc.decryptMember(rest);
+    if (decrypted.guardian) {
+      const { fiscalCodeHash: _gh, ...gRest } = decrypted.guardian as any;
+      decrypted.guardian = this.enc.decryptGuardian(gRest);
+    }
+    return decrypted;
   }
 
   async updateSocio(requestingRole: AdminRole, id: string, dto: UpdateSocioDto) {
@@ -20,11 +34,15 @@ export class MembersService {
     const member = await this.prisma.member.findUnique({ where: { id } });
     if (!member || member.deletedAt) throw new NotFoundException('Socio non trovato');
 
-    const data: Record<string, unknown> = { ...dto };
-    if (dto.birthDate) data['birthDate'] = new Date(dto.birthDate);
-    if (dto.docExpiry)  data['docExpiry']  = new Date(dto.docExpiry);
+    const raw: Record<string, unknown> = { ...dto };
+    if (dto.birthDate) raw.birthDate = new Date(dto.birthDate);
+    if (dto.docExpiry)  raw.docExpiry  = new Date(dto.docExpiry);
 
-    return this.prisma.member.update({ where: { id }, data });
+    const data = this.enc.encryptMember(raw);
+
+    const updated = await this.prisma.member.update({ where: { id }, data });
+    const { passwordHash: _, fiscalCodeHash: __, ...rest } = updated as any;
+    return this.enc.decryptMember(rest);
   }
 
   async deleteSocio(requestingRole: AdminRole, id: string) {

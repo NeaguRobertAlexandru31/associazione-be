@@ -73,6 +73,7 @@ model Member {
   firstName          String
   lastName           String
   fiscalCode         String
+  fiscalCodeHash     String?
   birthDate          DateTime
   birthPlace         String
   gender             MemberGender
@@ -98,20 +99,21 @@ model Member {
   updatedAt          DateTime      @updatedAt
   deletedAt          DateTime?
 
-  @@unique([fiscalCode, membershipYear])
+  @@unique([fiscalCodeHash, membershipYear])
 }
 
 model Guardian {
-  id         String          @id @default(uuid())
-  memberId   String          @unique
-  member     Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  firstName  String
-  lastName   String
-  fiscalCode String
-  relation   GuardianRelation
-  docType    DocType
-  docNumber  String
-  docExpiry  DateTime
+  id             String          @id @default(uuid())
+  memberId       String          @unique
+  member         Member          @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  firstName      String
+  lastName       String
+  fiscalCode     String
+  fiscalCodeHash String?
+  relation       GuardianRelation
+  docType        DocType
+  docNumber      String
+  docExpiry      DateTime
 }
 
 model Event {

@@ -5,27 +5,28 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EncryptionService } from '../encryption/encryption.service';
 import { CreateRegistrationDto, MemberCategory, PaymentMethod } from './dto/create-registration.dto';
 
 @Injectable()
 export class RegistrationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly enc: EncryptionService,
+  ) {}
 
   async create(dto: CreateRegistrationDto) {
     const now = new Date();
     const membershipYear = now.getFullYear();
 
-    // privacy_base obbligatorio
     if (!dto.privacyBase) {
       throw new BadRequestException('Il consenso privacy base è obbligatorio');
     }
 
-    // guardian obbligatorio se minorenne
     if (dto.isMinor && !dto.guardian) {
       throw new BadRequestException('Il tutore è obbligatorio per i minorenni');
     }
 
-    // doc_expiry futura
     if (new Date(dto.docExpiry) <= now) {
       throw new BadRequestException('Il documento è scaduto');
     }
@@ -33,7 +34,6 @@ export class RegistrationsService {
       throw new BadRequestException('Il documento del tutore è scaduto');
     }
 
-    // validazione under26
     if (dto.category === MemberCategory.under26) {
       const birth = new Date(dto.birthDate);
       const age = this.calcAge(birth, now);
@@ -44,13 +44,9 @@ export class RegistrationsService {
       }
     }
 
-    // stessa iscrizione attiva (stesso CF, stesso anno, status non rifiutato)
+    const fiscalCodeHash = this.enc.hmac(dto.fiscalCode);
     const duplicate = await this.prisma.member.findFirst({
-      where: {
-        fiscalCode: dto.fiscalCode.toUpperCase(),
-        membershipYear,
-        status: { not: 'rifiutato' },
-      },
+      where: { fiscalCodeHash, membershipYear, status: { not: 'rifiutato' } },
     });
     if (duplicate) {
       throw new ConflictException(
@@ -69,19 +65,20 @@ export class RegistrationsService {
         category:            dto.category,
         firstName:           dto.firstName,
         lastName:            dto.lastName,
-        fiscalCode:          dto.fiscalCode.toUpperCase(),
+        fiscalCode:          this.enc.encrypt(dto.fiscalCode.toUpperCase()),
+        fiscalCodeHash,
         birthDate:           new Date(dto.birthDate),
-        birthPlace:          dto.birthPlace,
+        birthPlace:          this.enc.encrypt(dto.birthPlace),
         gender:              dto.gender,
         docType:             dto.docType,
-        docNumber:           dto.docNumber,
+        docNumber:           this.enc.encrypt(dto.docNumber),
         docExpiry:           new Date(dto.docExpiry),
         email:               dto.email,
-        phone:               dto.phone,
-        addressStreet:       dto.addressStreet,
-        addressZip:          dto.addressZip,
-        addressCity:         dto.addressCity,
-        addressProvince:     dto.addressProvince,
+        phone:               this.enc.encrypt(dto.phone),
+        addressStreet:       this.enc.encrypt(dto.addressStreet),
+        addressZip:          this.enc.encrypt(dto.addressZip),
+        addressCity:         this.enc.encrypt(dto.addressCity),
+        addressProvince:     this.enc.encrypt(dto.addressProvince),
         status,
         membershipYear,
         paymentMethod:       dto.paymentMethod,
@@ -91,13 +88,14 @@ export class RegistrationsService {
         ...(dto.guardian && {
           guardian: {
             create: {
-              firstName:  dto.guardian.firstName,
-              lastName:   dto.guardian.lastName,
-              fiscalCode: dto.guardian.fiscalCode.toUpperCase(),
-              relation:   dto.guardian.relation,
-              docType:    dto.guardian.docType,
-              docNumber:  dto.guardian.docNumber,
-              docExpiry:  new Date(dto.guardian.docExpiry),
+              firstName:     dto.guardian.firstName,
+              lastName:      dto.guardian.lastName,
+              fiscalCode:    this.enc.encrypt(dto.guardian.fiscalCode.toUpperCase()),
+              fiscalCodeHash: this.enc.hmac(dto.guardian.fiscalCode),
+              relation:      dto.guardian.relation,
+              docType:       dto.guardian.docType,
+              docNumber:     this.enc.encrypt(dto.guardian.docNumber),
+              docExpiry:     new Date(dto.guardian.docExpiry),
             },
           },
         }),
@@ -106,8 +104,8 @@ export class RegistrationsService {
     });
 
     const response: Record<string, unknown> = {
-      id:            member.id,
-      status:        member.status,
+      id:             member.id,
+      status:         member.status,
       membershipYear: member.membershipYear,
     };
 
