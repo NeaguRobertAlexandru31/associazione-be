@@ -41,6 +41,15 @@ export class MembersController {
     return this.membersService.getAdmin(id);
   }
 
+  @Patch('admin/:id/board-role')
+  updateAdminBoardRoles(
+    @Request() req: { user: { id: string; role: AdminRole } },
+    @Param('id') id: string,
+    @Body('boardRoles') boardRoles: string[],
+  ) {
+    return this.membersService.updateAdminBoardRoles(req.user.role, id, boardRoles ?? []);
+  }
+
   @Delete('admin/:id')
   deleteAdmin(
     @Request() req: { user: { id: string; role: AdminRole } },

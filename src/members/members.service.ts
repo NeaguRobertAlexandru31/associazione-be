@@ -9,7 +9,7 @@ export class MembersService {
 
   async getSocio(id: string) {
     const member = await this.prisma.member.findUnique({ where: { id } });
-    if (!member) throw new NotFoundException('Socio non trovato');
+    if (!member || member.deletedAt) throw new NotFoundException('Socio non trovato');
     return member;
   }
 
@@ -18,7 +18,7 @@ export class MembersService {
       throw new ForbiddenException('Solo il presidente può modificare i soci');
 
     const member = await this.prisma.member.findUnique({ where: { id } });
-    if (!member) throw new NotFoundException('Socio non trovato');
+    if (!member || member.deletedAt) throw new NotFoundException('Socio non trovato');
 
     const data: Record<string, unknown> = { ...dto };
     if (dto.birthDate) data['birthDate'] = new Date(dto.birthDate);
@@ -32,9 +32,9 @@ export class MembersService {
       throw new ForbiddenException('Solo il presidente può eliminare i soci');
 
     const member = await this.prisma.member.findUnique({ where: { id } });
-    if (!member) throw new NotFoundException('Socio non trovato');
+    if (!member || member.deletedAt) throw new NotFoundException('Socio non trovato');
 
-    await this.prisma.member.delete({ where: { id } });
+    await this.prisma.member.update({ where: { id }, data: { deletedAt: new Date() } });
   }
 
   async deleteAdmin(requestingRole: AdminRole, requestingId: string, targetId: string) {
@@ -54,10 +54,24 @@ export class MembersService {
     await this.prisma.adminUser.delete({ where: { id: targetId } });
   }
 
+  async updateAdminBoardRoles(requestingRole: AdminRole, targetId: string, boardRoles: string[]) {
+    if (requestingRole !== AdminRole.SUPERADMIN)
+      throw new ForbiddenException('Solo il presidente può assegnare ruoli del direttivo');
+
+    const target = await this.prisma.adminUser.findUnique({ where: { id: targetId } });
+    if (!target) throw new NotFoundException('Membro del direttivo non trovato');
+
+    return this.prisma.adminUser.update({
+      where: { id: targetId },
+      data: { boardRoles },
+      select: { id: true, name: true, email: true, role: true, boardRoles: true, createdAt: true },
+    });
+  }
+
   async getAdmin(id: string) {
     const admin = await this.prisma.adminUser.findUnique({
       where: { id },
-      select: { id: true, name: true, email: true, role: true, createdAt: true },
+      select: { id: true, name: true, email: true, role: true, boardRoles: true, createdAt: true },
     });
     if (!admin) throw new NotFoundException('Membro direttivo non trovato');
     return admin;
@@ -66,10 +80,11 @@ export class MembersService {
   async getAll() {
     const [direttivo, soci] = await Promise.all([
       this.prisma.adminUser.findMany({
-        select: { id: true, name: true, email: true, role: true, createdAt: true },
+        select: { id: true, name: true, email: true, role: true, boardRoles: true, createdAt: true },
         orderBy: [{ role: 'asc' }, { name: 'asc' }],
       }),
       this.prisma.member.findMany({
+        where: { deletedAt: null },
         select: {
           id: true,
           firstName: true,

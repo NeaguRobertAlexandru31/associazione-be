@@ -13,6 +13,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterWithTokenDto } from './dto/register-with-token.dto';
+import { UpdateMyMemberDto } from './dto/update-my-member.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
@@ -40,7 +41,7 @@ export class AuthService {
       throw new ForbiddenException('Solo il superadmin può generare inviti');
     }
 
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     const invite = await this.prisma.adminInvite.create({
       data: { createdById: adminId, expiresAt },
     });
@@ -48,13 +49,13 @@ export class AuthService {
     return { token: invite.token };
   }
 
-  async checkMember(email: string): Promise<{ isMember: boolean; name?: string }> {
+  // Non restituisce il nome per evitare user enumeration (GDPR)
+  async checkMember(email: string): Promise<{ isMember: boolean }> {
     const member = await this.prisma.member.findFirst({
-      where: { email, status: { not: MemberStatus.rifiutato } },
-      select: { firstName: true, lastName: true },
+      where: { email, status: { not: MemberStatus.rifiutato }, deletedAt: null },
+      select: { id: true },
     });
-    if (!member) return { isMember: false };
-    return { isMember: true, name: `${member.firstName} ${member.lastName}` };
+    return { isMember: !!member };
   }
 
   async registerWithToken(dto: RegisterWithTokenDto) {
@@ -67,7 +68,7 @@ export class AuthService {
     if (invite.expiresAt < new Date()) throw new GoneException('Link di invito scaduto');
 
     const isMember = await this.prisma.member.findFirst({
-      where: { email: dto.email, status: { not: MemberStatus.rifiutato } },
+      where: { email: dto.email, status: { not: MemberStatus.rifiutato }, deletedAt: null },
     });
     if (!isMember) throw new BadRequestException('Per accedere al pannello devi prima registrarti come socio');
 
@@ -114,8 +115,8 @@ export class AuthService {
 
     const data: Record<string, unknown> = {};
     if (dto.name)     data['name']         = dto.name;
-    if (dto.email)    data['email']        = dto.email;
-    if (dto.password) data['passwordHash'] = await bcrypt.hash(dto.password, 10);
+    if (dto.email)    data['email']         = dto.email;
+    if (dto.password) data['passwordHash']  = await bcrypt.hash(dto.password, 10);
 
     const updated = await this.prisma.adminUser.update({ where: { id }, data });
     return { access_token: this.sign(updated), admin: this.toPublic(updated) };
@@ -134,6 +135,48 @@ export class AuthService {
     }
 
     await this.prisma.adminUser.delete({ where: { id } });
+  }
+
+  // ── Area personale socio ──────────────────────────────────────────────────
+
+  async getMyMember(adminId: string) {
+    const admin = await this.prisma.adminUser.findUnique({
+      where: { id: adminId },
+      select: { email: true },
+    });
+    if (!admin) throw new NotFoundException();
+    return this.prisma.member.findFirst({
+      where: { email: admin.email, deletedAt: null },
+    });
+  }
+
+  async updateMyMember(adminId: string, dto: UpdateMyMemberDto) {
+    const admin = await this.prisma.adminUser.findUnique({
+      where: { id: adminId },
+      select: { email: true },
+    });
+    if (!admin) throw new NotFoundException();
+    const member = await this.prisma.member.findFirst({
+      where: { email: admin.email, deletedAt: null },
+    });
+    if (!member) throw new NotFoundException('Nessun record socio trovato');
+    return this.prisma.member.update({ where: { id: member.id }, data: dto });
+  }
+
+  async deleteMyMember(adminId: string) {
+    const admin = await this.prisma.adminUser.findUnique({
+      where: { id: adminId },
+      select: { email: true },
+    });
+    if (!admin) throw new NotFoundException();
+    const member = await this.prisma.member.findFirst({
+      where: { email: admin.email, deletedAt: null },
+    });
+    if (!member) throw new NotFoundException('Nessun record socio trovato');
+    await this.prisma.member.update({
+      where: { id: member.id },
+      data: { deletedAt: new Date() },
+    });
   }
 
   private sign(admin: { id: string; email: string; name: string; role: AdminRole }) {

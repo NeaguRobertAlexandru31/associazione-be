@@ -2,6 +2,7 @@ import { Body, Controller, Delete, Get, Patch, Post, Request, UseGuards } from '
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterWithTokenDto } from './dto/register-with-token.dto';
+import { UpdateMyMemberDto } from './dto/update-my-member.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
@@ -52,5 +53,28 @@ export class AuthController {
     @Body('currentPassword') currentPassword: string,
   ) {
     return this.authService.deleteProfile(req.user.id, currentPassword);
+  }
+
+  // ── Area personale socio ────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('me/member')
+  getMyMember(@Request() req: { user: { id: string } }) {
+    return this.authService.getMyMember(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('me/member')
+  updateMyMember(
+    @Request() req: { user: { id: string } },
+    @Body() dto: UpdateMyMemberDto,
+  ) {
+    return this.authService.updateMyMember(req.user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('me/member')
+  deleteMyMember(@Request() req: { user: { id: string } }) {
+    return this.authService.deleteMyMember(req.user.id);
   }
 }
