@@ -1,5 +1,7 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Request, UseGuards } from '@nestjs/common';
+import { AdminRole } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UpdateSocioDto } from './dto/update-socio.dto';
 import { MembersService } from './members.service';
 
 @UseGuards(JwtAuthGuard)
@@ -17,8 +19,33 @@ export class MembersController {
     return this.membersService.getSocio(id);
   }
 
+  @Patch('soci/:id')
+  updateSocio(
+    @Request() req: { user: { id: string; role: AdminRole } },
+    @Param('id') id: string,
+    @Body() dto: UpdateSocioDto,
+  ) {
+    return this.membersService.updateSocio(req.user.role, id, dto);
+  }
+
+  @Delete('soci/:id')
+  deleteSocio(
+    @Request() req: { user: { id: string; role: AdminRole } },
+    @Param('id') id: string,
+  ) {
+    return this.membersService.deleteSocio(req.user.role, id);
+  }
+
   @Get('admin/:id')
   getAdmin(@Param('id') id: string) {
     return this.membersService.getAdmin(id);
+  }
+
+  @Delete('admin/:id')
+  deleteAdmin(
+    @Request() req: { user: { id: string; role: AdminRole } },
+    @Param('id') id: string,
+  ) {
+    return this.membersService.deleteAdmin(req.user.role, req.user.id, id);
   }
 }

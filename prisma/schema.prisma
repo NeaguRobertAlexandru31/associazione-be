@@ -222,3 +222,12 @@ model AdminInvite {
   expiresAt   DateTime
   createdAt   DateTime  @default(now())
 }
+
+model OtpCode {
+  id        String    @id @default(uuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
