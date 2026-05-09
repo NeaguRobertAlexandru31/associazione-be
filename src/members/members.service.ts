@@ -40,8 +40,24 @@ export class MembersService {
 
     const data = this.enc.encryptMember(raw);
 
-    const updated = await this.prisma.member.update({ where: { id }, data });
-    const { passwordHash: _, fiscalCodeHash: __, ...rest } = updated as any;
+    const updated = await this.prisma.member.update({
+      where: { id },
+      data,
+      include: { adminUser: true },
+    });
+
+    if (updated.adminUser && (dto.email || dto.firstName || dto.lastName)) {
+      const adminData: Record<string, unknown> = {};
+      if (dto.email) adminData['email'] = dto.email;
+      if (dto.firstName || dto.lastName) {
+        const first = dto.firstName ?? member.firstName;
+        const last  = dto.lastName  ?? member.lastName;
+        adminData['name'] = `${first} ${last}`.trim();
+      }
+      await this.prisma.adminUser.update({ where: { id: updated.adminUser.id }, data: adminData });
+    }
+
+    const { passwordHash: _, fiscalCodeHash: __, adminUser: _au, ...rest } = updated as any;
     return this.enc.decryptMember(rest);
   }
 

@@ -1,10 +1,13 @@
 import {
   Controller,
   Post,
+  Request,
+  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { randomBytes } from 'crypto';
@@ -12,6 +15,7 @@ import { randomBytes } from 'crypto';
 const sharp = require('sharp') as typeof import('sharp');
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { R2Service } from '../r2/r2.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 const imageFilter = (_req: any, file: Express.Multer.File, cb: any) => {
   /image\/(jpeg|png|webp|gif)/.test(file.mimetype) ? cb(null, true) : cb(null, false);
@@ -22,7 +26,10 @@ const memStorage = memoryStorage();
 @Controller('uploads')
 @UseGuards(JwtAuthGuard)
 export class UploadsController {
-  constructor(private readonly r2: R2Service) {}
+  constructor(
+    private readonly r2: R2Service,
+    private readonly prisma: PrismaService,
+  ) {}
 
   private async processAndUpload(
     files: Express.Multer.File[],
@@ -104,5 +111,33 @@ export class UploadsController {
   async uploadPlaceholders(@UploadedFiles() files: Express.Multer.File[]) {
     const urls = await this.processAndUpload(files, 'placeholders');
     return { urls };
+  }
+
+  @Post('avatar')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage:    memStorage,
+      fileFilter: imageFilter,
+      limits:     { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: { user: { id: string } },
+  ) {
+    const webpBuffer = await sharp(file.buffer)
+      .resize(400, 400, { fit: 'cover' })
+      .webp({ quality: 85 })
+      .toBuffer();
+
+    const key = `avatars/${randomBytes(10).toString('hex')}.webp`;
+    const url = await this.r2.upload(key, webpBuffer);
+
+    await this.prisma.adminUser.update({
+      where: { id: req.user.id },
+      data: { profileImage: url },
+    });
+
+    return { url };
   }
 }

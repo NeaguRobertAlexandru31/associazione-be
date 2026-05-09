@@ -12,6 +12,7 @@ import { AdminRole, MemberStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import type { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
+import { EncryptionService } from '../encryption/encryption.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterWithTokenDto } from './dto/register-with-token.dto';
 import { UpdateMyMemberDto } from './dto/update-my-member.dto';
@@ -36,6 +37,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly enc: EncryptionService,
   ) {}
 
   async login(dto: LoginDto, res: Response) {
@@ -102,16 +104,14 @@ export class AuthService {
     });
     if (!isMember) throw new BadRequestException('Per accedere al pannello devi prima registrarti come socio');
 
-    const existing = await this.prisma.adminUser.findUnique({
-      where: { email: dto.email },
-    });
+    const existing = await this.prisma.adminUser.findUnique({ where: { email: dto.email } });
     if (existing) throw new ConflictException('Email già in uso');
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     const [admin] = await this.prisma.$transaction([
       this.prisma.adminUser.create({
-        data: { name: dto.name, email: dto.email, passwordHash, role: AdminRole.ADMIN },
+        data: { name: dto.name, email: dto.email, passwordHash, role: AdminRole.ADMIN, memberId: isMember.id },
       }),
       this.prisma.adminInvite.update({
         where: { token: dto.token },
@@ -145,11 +145,23 @@ export class AuthService {
     }
 
     const data: Record<string, unknown> = {};
-    if (dto.name)     data['name']         = dto.name;
-    if (dto.email)    data['email']         = dto.email;
-    if (dto.password) data['passwordHash']  = await bcrypt.hash(dto.password, 10);
+    if (dto.name)     data['name']        = dto.name;
+    if (dto.email)    data['email']        = dto.email;
+    if (dto.password) data['passwordHash'] = await bcrypt.hash(dto.password, 10);
 
     const updated = await this.prisma.adminUser.update({ where: { id }, data });
+
+    if (admin.memberId && (dto.email || dto.name)) {
+      const memberData: Record<string, unknown> = {};
+      if (dto.email) memberData['email'] = dto.email;
+      if (dto.name) {
+        const spaceIdx = dto.name.trim().indexOf(' ');
+        memberData['firstName'] = spaceIdx >= 0 ? dto.name.trim().slice(0, spaceIdx) : dto.name.trim();
+        memberData['lastName']  = spaceIdx >= 0 ? dto.name.trim().slice(spaceIdx + 1) : '';
+      }
+      await this.prisma.member.update({ where: { id: admin.memberId }, data: memberData });
+    }
+
     return { access_token: this.sign(updated), admin: this.toPublic(updated) };
   }
 
@@ -173,41 +185,64 @@ export class AuthService {
   async getMyMember(adminId: string) {
     const admin = await this.prisma.adminUser.findUnique({
       where: { id: adminId },
-      select: { email: true },
+      select: { memberId: true, email: true },
     });
     if (!admin) throw new NotFoundException();
-    return this.prisma.member.findFirst({
-      where: { email: admin.email, deletedAt: null },
-    });
+    const raw = admin.memberId
+      ? await this.prisma.member.findUnique({ where: { id: admin.memberId, deletedAt: null }, include: { guardian: true } })
+      : await this.prisma.member.findFirst({ where: { email: admin.email, deletedAt: null }, include: { guardian: true } });
+    if (!raw) return null;
+    const { passwordHash: _, fiscalCodeHash: __, ...rest } = raw as any;
+    const decrypted = this.enc.decryptMember(rest);
+    if (decrypted.guardian) {
+      const { fiscalCodeHash: _gh, ...gRest } = decrypted.guardian as any;
+      decrypted.guardian = this.enc.decryptGuardian(gRest);
+    }
+    return decrypted;
   }
 
   async updateMyMember(adminId: string, dto: UpdateMyMemberDto) {
     const admin = await this.prisma.adminUser.findUnique({
       where: { id: adminId },
-      select: { email: true },
+      select: { id: true, memberId: true, email: true },
     });
     if (!admin) throw new NotFoundException();
-    const member = await this.prisma.member.findFirst({
-      where: { email: admin.email, deletedAt: null },
-    });
+    const member = admin.memberId
+      ? await this.prisma.member.findUnique({ where: { id: admin.memberId, deletedAt: null } })
+      : await this.prisma.member.findFirst({ where: { email: admin.email, deletedAt: null } });
     if (!member) throw new NotFoundException('Nessun record socio trovato');
-    return this.prisma.member.update({ where: { id: member.id }, data: dto });
+
+    const raw: Record<string, unknown> = { ...dto };
+    if (dto.birthDate) raw['birthDate'] = new Date(dto.birthDate);
+    if (dto.docExpiry)  raw['docExpiry']  = new Date(dto.docExpiry);
+    const data = this.enc.encryptMember(raw);
+
+    const updated = await this.prisma.member.update({ where: { id: member.id }, data });
+
+    if (dto.firstName || dto.lastName) {
+      const first = dto.firstName ?? member.firstName;
+      const last  = dto.lastName  ?? member.lastName;
+      await this.prisma.adminUser.update({
+        where: { id: admin.id },
+        data: { name: `${first} ${last}`.trim() },
+      });
+    }
+
+    const { passwordHash: _, fiscalCodeHash: __, ...rest } = updated as any;
+    return this.enc.decryptMember(rest);
   }
 
   async deleteMyMember(adminId: string) {
     const admin = await this.prisma.adminUser.findUnique({
       where: { id: adminId },
-      select: { email: true },
+      select: { memberId: true, email: true },
     });
     if (!admin) throw new NotFoundException();
-    const member = await this.prisma.member.findFirst({
-      where: { email: admin.email, deletedAt: null },
-    });
+    const member = admin.memberId
+      ? await this.prisma.member.findUnique({ where: { id: admin.memberId, deletedAt: null } })
+      : await this.prisma.member.findFirst({ where: { email: admin.email, deletedAt: null } });
     if (!member) throw new NotFoundException('Nessun record socio trovato');
-    await this.prisma.member.update({
-      where: { id: member.id },
-      data: { deletedAt: new Date() },
-    });
+    await this.prisma.member.update({ where: { id: member.id }, data: { deletedAt: new Date() } });
   }
 
   private sign(admin: { id: string; email: string; name: string; role: AdminRole }) {
@@ -221,7 +256,7 @@ export class AuthService {
     );
   }
 
-  private toPublic(admin: { id: string; name: string; email: string; role: AdminRole }) {
-    return { id: admin.id, name: admin.name, email: admin.email, role: admin.role };
+  private toPublic(admin: { id: string; name: string; email: string; role: AdminRole; profileImage?: string | null }) {
+    return { id: admin.id, name: admin.name, email: admin.email, role: admin.role, profileImage: admin.profileImage ?? null };
   }
 }

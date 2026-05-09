@@ -16,6 +16,7 @@ async function main() {
       name: 'Admin',
       email: 'admin@associazione.it',
       passwordHash,
+      role: 'SUPERADMIN',
     },
   });
 

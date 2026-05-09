@@ -95,6 +95,7 @@ model Member {
   passwordHash       String?
   guardian           Guardian?
   donations          Donation[]
+  adminUser          AdminUser?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
   deletedAt          DateTime?
@@ -206,7 +207,10 @@ model AdminUser {
   email        String        @unique
   passwordHash String
   role         AdminRole     @default(ADMIN)
-  boardRoles   String[]
+  boardRoles    String[]
+  profileImage  String?
+  memberId      String?       @unique
+  member       Member?       @relation(fields: [memberId], references: [id])
   invitesSent  AdminInvite[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
