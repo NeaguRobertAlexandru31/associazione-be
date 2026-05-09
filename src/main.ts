@@ -12,6 +12,8 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.use(cookieParser());
+  app.use(require('express').json({ limit: '20mb' }));
+  app.use(require('express').urlencoded({ limit: '20mb', extended: true }));
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
   app.enableCors({

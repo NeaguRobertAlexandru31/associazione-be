@@ -98,14 +98,14 @@ export class MembersService {
     return this.prisma.adminUser.update({
       where: { id: targetId },
       data: { boardRoles },
-      select: { id: true, name: true, email: true, role: true, boardRoles: true, createdAt: true },
+      select: { id: true, name: true, email: true, role: true, boardRoles: true, profileImage: true, createdAt: true },
     });
   }
 
   async getAdmin(id: string) {
     const admin = await this.prisma.adminUser.findUnique({
       where: { id },
-      select: { id: true, name: true, email: true, role: true, boardRoles: true, createdAt: true },
+      select: { id: true, name: true, email: true, role: true, boardRoles: true, profileImage: true, createdAt: true },
     });
     if (!admin) throw new NotFoundException('Membro direttivo non trovato');
     return admin;
@@ -136,7 +136,7 @@ export class MembersService {
   async getAll() {
     const [direttivo, soci] = await Promise.all([
       this.prisma.adminUser.findMany({
-        select: { id: true, name: true, email: true, role: true, boardRoles: true, createdAt: true },
+        select: { id: true, name: true, email: true, role: true, boardRoles: true, profileImage: true, createdAt: true },
         orderBy: [{ role: 'asc' }, { name: 'asc' }],
       }),
       this.prisma.member.findMany({
@@ -149,12 +149,26 @@ export class MembersService {
           category: true,
           status: true,
           membershipYear: true,
+          profileImage: true,
           createdAt: true,
+          adminUser: { select: { profileImage: true } },
         },
         orderBy: { lastName: 'asc' },
       }),
     ]);
 
-    return { direttivo, soci };
+    const adminPhotoByEmail = new Map(
+      direttivo
+        .filter(a => a.profileImage)
+        .map(a => [a.email, a.profileImage]),
+    );
+
+    const sociMapped = soci.map(({ adminUser, profileImage, email, ...rest }) => ({
+      ...rest,
+      email,
+      profileImage: profileImage ?? adminUser?.profileImage ?? adminPhotoByEmail.get(email) ?? null,
+    }));
+
+    return { direttivo, soci: sociMapped };
   }
 }

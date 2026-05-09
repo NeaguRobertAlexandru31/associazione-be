@@ -93,6 +93,7 @@ model Member {
   privacyNewsletter  Boolean       @default(false)
   privacyThirdParties Boolean      @default(false)
   passwordHash       String?
+  profileImage       String?
   guardian           Guardian?
   donations          Donation[]
   adminUser          AdminUser?

@@ -78,6 +78,15 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Patch('me/link-member')
+  linkMember(
+    @Request() req: { user: { id: string } },
+    @Body('memberEmail') memberEmail: string,
+  ) {
+    return this.authService.linkMember(req.user.id, memberEmail);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Patch('me/member')
   updateMyMember(
     @Request() req: { user: { id: string } },

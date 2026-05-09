@@ -245,6 +245,25 @@ export class AuthService {
     await this.prisma.member.update({ where: { id: member.id }, data: { deletedAt: new Date() } });
   }
 
+  async linkMember(adminId: string, memberEmail: string) {
+    const member = await this.prisma.member.findFirst({
+      where: { email: memberEmail, deletedAt: null },
+      select: { id: true, firstName: true, lastName: true },
+    });
+    if (!member) throw new NotFoundException('Nessun socio trovato con questa email');
+
+    const conflict = await this.prisma.adminUser.findFirst({
+      where: { memberId: member.id, id: { not: adminId } },
+    });
+    if (conflict) throw new BadRequestException('Questo profilo socio è già collegato a un altro account');
+
+    await this.prisma.adminUser.update({
+      where: { id: adminId },
+      data: { memberId: member.id },
+    });
+    return { ok: true };
+  }
+
   private sign(admin: { id: string; email: string; name: string; role: AdminRole }) {
     return this.jwtService.sign({ sub: admin.id, email: admin.email, name: admin.name, role: admin.role });
   }
