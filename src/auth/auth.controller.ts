@@ -1,11 +1,30 @@
-import { Body, Controller, Delete, Get, Patch, Post, Req, Res, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res, Request, UseGuards } from '@nestjs/common';
 import type { Request as ExpressRequest, Response } from 'express';
+import { IsArray, IsEnum, IsOptional, IsString } from 'class-validator';
+import { UserRole } from '@prisma/client';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { RegisterWithTokenDto } from './dto/register-with-token.dto';
 import { UpdateMyMemberDto } from './dto/update-my-member.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AdminGuard } from './guards/admin.guard';
+import { SuperadminGuard } from './guards/superadmin.guard';
+import { IsBoolean, IsObject } from 'class-validator';
+
+class UpdatePermissionsDto {
+  @IsObject()
+  pagePermissions: Record<string, boolean>;
+}
+
+class PromoteRoleDto {
+  @IsEnum(UserRole)
+  role: UserRole;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  boardRoles?: string[];
+}
 
 @Controller('auth')
 export class AuthController {
@@ -14,11 +33,6 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     return this.authService.login(dto, res);
-  }
-
-  @Post('register')
-  register(@Body() dto: RegisterWithTokenDto, @Res({ passthrough: true }) res: Response) {
-    return this.authService.registerWithToken(dto, res);
   }
 
   @Post('refresh')
@@ -32,15 +46,17 @@ export class AuthController {
     return { ok: true };
   }
 
-  @Post('check-member')
-  checkMember(@Body('email') email: string) {
-    return this.authService.checkMember(email);
+  @Post('check-email')
+  checkEmail(@Body('email') email: string) {
+    return this.authService.checkEmail(email);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post('invite')
-  createInvite(@Request() req: { user: { id: string; role: any } }) {
-    return this.authService.createInvite(req.user.id, req.user.role);
+  @Post('set-password')
+  setPassword(
+    @Body('email') email: string,
+    @Body('password') password: string,
+  ) {
+    return this.authService.setPassword(email, password);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -69,21 +85,12 @@ export class AuthController {
     return this.authService.deleteProfile(req.user.id, currentPassword);
   }
 
-  // ── Area personale socio ────────────────────────────────────────────────
+  // ── Profilo anagrafico ────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
   @Get('me/member')
   getMyMember(@Request() req: { user: { id: string } }) {
     return this.authService.getMyMember(req.user.id);
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Patch('me/link-member')
-  linkMember(
-    @Request() req: { user: { id: string } },
-    @Body('memberEmail') memberEmail: string,
-  ) {
-    return this.authService.linkMember(req.user.id, memberEmail);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -95,9 +102,27 @@ export class AuthController {
     return this.authService.updateMyMember(req.user.id, dto);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Delete('me/member')
-  deleteMyMember(@Request() req: { user: { id: string } }) {
-    return this.authService.deleteMyMember(req.user.id);
+  // ── Permessi pagine (solo SUPERADMIN) ────────────────────────────────────
+
+  @UseGuards(SuperadminGuard)
+  @Patch('members/:id/permissions')
+  updatePermissions(
+    @Request() req: { user: { id: string } },
+    @Param('id') targetId: string,
+    @Body() dto: UpdatePermissionsDto,
+  ) {
+    return this.authService.updatePermissions(req.user.id, targetId, dto.pagePermissions);
+  }
+
+  // ── Promozione ruolo (solo SUPERADMIN) ────────────────────────────────────
+
+  @UseGuards(AdminGuard)
+  @Patch('members/:id/role')
+  promoteRole(
+    @Request() req: { user: { id: string } },
+    @Param('id') targetId: string,
+    @Body() dto: PromoteRoleDto,
+  ) {
+    return this.authService.promoteRole(req.user.id, targetId, dto.role, dto.boardRoles ?? []);
   }
 }

@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Patch, Request, UseGuards } from '@nestjs/common';
-import { AdminRole } from '@prisma/client';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UserRole } from '@prisma/client';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { UpdateSocioDto } from './dto/update-socio.dto';
 import { MembersService } from './members.service';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(AdminGuard)
 @Controller('members')
 export class MembersController {
   constructor(private readonly membersService: MembersService) {}
@@ -19,47 +19,25 @@ export class MembersController {
     return this.membersService.getDonationStats();
   }
 
-  @Get('soci/:id')
-  getSocio(@Param('id') id: string) {
-    return this.membersService.getSocio(id);
+  @Get(':id')
+  getMember(@Param('id') id: string) {
+    return this.membersService.getMember(id);
   }
 
-  @Patch('soci/:id')
-  updateSocio(
-    @Request() req: { user: { id: string; role: AdminRole } },
+  @Patch(':id')
+  updateMember(
+    @Request() req: { user: { role: UserRole } },
     @Param('id') id: string,
     @Body() dto: UpdateSocioDto,
   ) {
-    return this.membersService.updateSocio(req.user.role, id, dto);
+    return this.membersService.updateMember(req.user.role, id, dto);
   }
 
-  @Delete('soci/:id')
-  deleteSocio(
-    @Request() req: { user: { id: string; role: AdminRole } },
+  @Delete(':id')
+  deleteMember(
+    @Request() req: { user: { role: UserRole } },
     @Param('id') id: string,
   ) {
-    return this.membersService.deleteSocio(req.user.role, id);
-  }
-
-  @Get('admin/:id')
-  getAdmin(@Param('id') id: string) {
-    return this.membersService.getAdmin(id);
-  }
-
-  @Patch('admin/:id/board-role')
-  updateAdminBoardRoles(
-    @Request() req: { user: { id: string; role: AdminRole } },
-    @Param('id') id: string,
-    @Body('boardRoles') boardRoles: string[],
-  ) {
-    return this.membersService.updateAdminBoardRoles(req.user.role, id, boardRoles ?? []);
-  }
-
-  @Delete('admin/:id')
-  deleteAdmin(
-    @Request() req: { user: { id: string; role: AdminRole } },
-    @Param('id') id: string,
-  ) {
-    return this.membersService.deleteAdmin(req.user.role, req.user.id, id);
+    return this.membersService.deleteMember(req.user.role, id);
   }
 }

@@ -9,6 +9,12 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  SUPERADMIN
+  ADMIN
+  MEMBER
+}
+
 enum MemberCategory {
   ordinario
   under26
@@ -67,39 +73,41 @@ enum DonationMethod {
 }
 
 model Member {
-  id                 String        @id @default(uuid())
-  isMinor            Boolean
-  category           MemberCategory
-  firstName          String
-  lastName           String
-  fiscalCode         String
-  fiscalCodeHash     String?
-  birthDate          DateTime
-  birthPlace         String
-  gender             MemberGender
-  docType            DocType
-  docNumber          String
-  docExpiry          DateTime
-  email              String
-  phone              String
-  addressStreet      String
-  addressZip         String
-  addressCity        String
-  addressProvince    String
-  status             MemberStatus  @default(in_attesa_pagamento)
-  membershipYear     Int
-  paymentMethod      PaymentMethod
-  privacyBase        Boolean
-  privacyNewsletter  Boolean       @default(false)
-  privacyThirdParties Boolean      @default(false)
-  passwordHash       String?
-  profileImage       String?
-  guardian           Guardian?
-  donations          Donation[]
-  adminUser          AdminUser?
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-  deletedAt          DateTime?
+  id                  String         @id @default(uuid())
+  role                UserRole       @default(MEMBER)
+  isMinor             Boolean        @default(false)
+  category            MemberCategory @default(ordinario)
+  firstName           String
+  lastName            String
+  fiscalCode          String?
+  fiscalCodeHash      String?
+  birthDate           DateTime?
+  birthPlace          String?
+  gender              MemberGender?
+  docType             DocType?
+  docNumber           String?
+  docExpiry           DateTime?
+  email               String
+  phone               String?
+  addressStreet       String?
+  addressZip          String?
+  addressCity         String?
+  addressProvince     String?
+  status              MemberStatus   @default(in_attesa_pagamento)
+  membershipYear      Int?
+  paymentMethod       PaymentMethod?
+  privacyBase         Boolean        @default(false)
+  privacyNewsletter   Boolean        @default(false)
+  privacyThirdParties Boolean        @default(false)
+  passwordHash        String?
+  profileImage        String?
+  boardRoles          String[]
+  pagePermissions     Json?
+  guardian            Guardian?
+  donations           Donation[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  deletedAt           DateTime?
 
   @@unique([fiscalCodeHash, membershipYear])
 }
@@ -197,40 +205,10 @@ model NewsletterSubscriber {
   createdAt DateTime @default(now())
 }
 
-enum AdminRole {
-  SUPERADMIN
-  ADMIN
-}
-
-model AdminUser {
-  id           String        @id @default(uuid())
-  name         String
-  email        String        @unique
-  passwordHash String
-  role         AdminRole     @default(ADMIN)
-  boardRoles    String[]
-  profileImage  String?
-  memberId      String?       @unique
-  member       Member?       @relation(fields: [memberId], references: [id])
-  invitesSent  AdminInvite[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-}
-
 model SiteSetting {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
-}
-
-model AdminInvite {
-  id          String    @id @default(uuid())
-  token       String    @unique @default(uuid())
-  createdBy   AdminUser @relation(fields: [createdById], references: [id])
-  createdById String
-  usedAt      DateTime?
-  expiresAt   DateTime
-  createdAt   DateTime  @default(now())
 }
 
 model OtpCode {

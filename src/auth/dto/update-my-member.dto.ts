@@ -11,6 +11,7 @@ export class UpdateMyMemberDto {
   @IsOptional() @IsEnum(DocType) docType?: DocType;
   @IsOptional() @IsString() docNumber?: string;
   @IsOptional() @IsString() docExpiry?: string;
+  @IsOptional() @IsString() email?: string;
   @IsOptional() @IsString() phone?: string;
   @IsOptional() @IsString() addressStreet?: string;
   @IsOptional() @IsString() @MaxLength(5) addressZip?: string;

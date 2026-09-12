@@ -61,6 +61,7 @@ export class RegistrationsService {
 
     const member = await this.prisma.member.create({
       data: {
+        role:                'MEMBER',
         isMinor:             dto.isMinor,
         category:            dto.category,
         firstName:           dto.firstName,

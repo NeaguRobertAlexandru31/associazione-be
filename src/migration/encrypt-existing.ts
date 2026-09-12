@@ -40,14 +40,14 @@ async function main() {
   let mDone = 0;
 
   for (const m of members) {
-    if (isEncrypted(m.fiscalCode)) { mDone++; continue; }
+    if (!m.fiscalCode || isEncrypted(m.fiscalCode)) { mDone++; continue; }
 
     const update: Record<string, unknown> = {};
     for (const f of MEMBER_FIELDS) {
       const val = (m as any)[f] as string | null;
       if (val) update[f] = encrypt(val);
     }
-    update.fiscalCodeHash = hmac(m.fiscalCode);
+    update.fiscalCodeHash = hmac(m.fiscalCode!);
 
     await prisma.member.update({ where: { id: m.id }, data: update });
     mDone++;
@@ -67,7 +67,7 @@ async function main() {
       const val = (g as any)[f] as string | null;
       if (val) update[f] = encrypt(val);
     }
-    update.fiscalCodeHash = hmac(g.fiscalCode);
+    update.fiscalCodeHash = hmac(g.fiscalCode!);
 
     await prisma.guardian.update({ where: { id: g.id }, data: update });
     gDone++;

@@ -9,14 +9,17 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   const passwordHash = await bcrypt.hash('admin123', 10);
 
-  const admin = await prisma.adminUser.upsert({
-    where: { email: 'admin@associazione.it' },
+  const admin = await prisma.member.upsert({
+    where: { id: 'seed-superadmin-id' },
     update: {},
     create: {
-      name: 'Admin',
+      id: 'seed-superadmin-id',
+      firstName: 'Admin',
+      lastName: 'Associazione',
       email: 'admin@associazione.it',
       passwordHash,
       role: 'SUPERADMIN',
+      status: 'attivo',
     },
   });
 

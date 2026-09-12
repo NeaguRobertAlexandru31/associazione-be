@@ -13,7 +13,7 @@ import { memoryStorage } from 'multer';
 import { randomBytes } from 'crypto';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const sharp = require('sharp') as typeof import('sharp');
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
 import { R2Service } from '../r2/r2.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -24,7 +24,7 @@ const imageFilter = (_req: any, file: Express.Multer.File, cb: any) => {
 const memStorage = memoryStorage();
 
 @Controller('uploads')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AdminGuard)
 export class UploadsController {
   constructor(
     private readonly r2: R2Service,
@@ -133,7 +133,7 @@ export class UploadsController {
     const key = `avatars/${randomBytes(10).toString('hex')}.webp`;
     const url = await this.r2.upload(key, webpBuffer);
 
-    await this.prisma.adminUser.update({
+    await this.prisma.member.update({
       where: { id: req.user.id },
       data: { profileImage: url },
     });
