@@ -12,7 +12,7 @@ export class AppService {
 
   async getPublicStats() {
     const [soci, projects, events, articles] = await Promise.all([
-      this.prisma.member.count({ where: { status: { not: MemberStatus.rifiutato } } }),
+      this.prisma.member.count({ where: { status: MemberStatus.attivo, deletedAt: null } }),
       this.prisma.project.count(),
       this.prisma.event.count({ where: { date: { gte: new Date() } } }),
       this.prisma.article.count(),
