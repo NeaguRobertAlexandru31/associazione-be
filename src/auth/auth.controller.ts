@@ -88,6 +88,12 @@ export class AuthController {
   // ── Profilo anagrafico ────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
+  @Get('me/tessera')
+  getMyTessera(@Request() req: { user: { id: string } }) {
+    return this.authService.getMyTessera(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('me/member')
   getMyMember(@Request() req: { user: { id: string } }) {
     return this.authService.getMyMember(req.user.id);

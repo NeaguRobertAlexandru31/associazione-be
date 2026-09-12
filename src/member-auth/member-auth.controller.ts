@@ -47,6 +47,12 @@ export class MemberAuthController {
   }
 
   @UseGuards(MemberJwtGuard)
+  @Get('me/tessera')
+  getMeTessera(@Request() req: { user: { id: string } }) {
+    return this.service.getMeTessera(req.user.id);
+  }
+
+  @UseGuards(MemberJwtGuard)
   @Patch('me')
   updateMe(
     @Request() req: { user: { id: string } },

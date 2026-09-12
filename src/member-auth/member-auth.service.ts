@@ -78,6 +78,44 @@ export class MemberAuthService {
     return this.enc.decryptMember(rest);
   }
 
+  async getMeTessera(memberId: string) {
+    const member = await this.prisma.member.findUnique({
+      where: { id: memberId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        category: true,
+        status: true,
+        membershipYear: true,
+        paymentMethod: true,
+        profileImage: true,
+      },
+    });
+    if (!member || !member.membershipYear) throw new NotFoundException('Socio non trovato');
+
+    const year    = member.membershipYear;
+    const expiry  = new Date(`${year}-12-31`);
+    const now     = new Date();
+    const expired = now > expiry;
+    const daysLeft = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    return {
+      id:             member.id,
+      firstName:      member.firstName,
+      lastName:       member.lastName,
+      category:       member.category,
+      status:         member.status,
+      membershipYear: year,
+      expiryDate:     expiry.toISOString(),
+      expired,
+      daysLeft:       expired ? 0 : daysLeft,
+      paymentMethod:  member.paymentMethod,
+      profileImage:   member.profileImage,
+      cardCode:       `ACR · ${year} · ${member.id.slice(-4).toUpperCase()}`,
+    };
+  }
+
   async deleteMe(memberId: string) {
     const member = await this.prisma.member.findUnique({ where: { id: memberId } });
     if (!member || member.deletedAt) throw new NotFoundException('Socio non trovato');

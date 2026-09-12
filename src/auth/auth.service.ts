@@ -240,6 +240,44 @@ export class AuthService {
     });
   }
 
+  async getMyTessera(id: string) {
+    const member = await this.prisma.member.findUnique({
+      where: { id, deletedAt: null },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        category: true,
+        status: true,
+        membershipYear: true,
+        paymentMethod: true,
+        profileImage: true,
+      },
+    });
+    if (!member) throw new NotFoundException('Tessera non trovata');
+
+    const year     = member.membershipYear ?? new Date().getFullYear();
+    const expiry   = new Date(`${year}-12-31`);
+    const now      = new Date();
+    const expired  = now > expiry;
+    const daysLeft = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+    return {
+      id:             member.id,
+      firstName:      member.firstName,
+      lastName:       member.lastName,
+      category:       member.category,
+      status:         member.status,
+      membershipYear: year,
+      expiryDate:     expiry.toISOString(),
+      expired,
+      daysLeft:       expired ? 0 : daysLeft,
+      paymentMethod:  member.paymentMethod,
+      profileImage:   member.profileImage,
+      cardCode:       `ACR · ${year} · ${member.id.slice(-4).toUpperCase()}`,
+    };
+  }
+
   // ── Check email (usato dal flusso "primo accesso") ────────────────────────
 
   async checkEmail(email: string) {
