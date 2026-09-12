@@ -212,7 +212,11 @@ export class AuthService {
 
     return this.prisma.member.update({
       where: { id: targetId },
-      data: { role, boardRoles: role === UserRole.MEMBER ? [] : boardRoles },
+      data: {
+        role,
+        boardRoles: role === UserRole.MEMBER ? [] : boardRoles,
+        ...(role !== UserRole.MEMBER && { status: 'attivo' }),
+      },
       select: PUBLIC_SELECT,
     });
   }
