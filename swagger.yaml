@@ -1,0 +1,1422 @@
+openapi: 3.0.3
+info:
+  title: Associazione API
+  description: |
+    API REST del gestionale associazione. Un solo sistema di autenticazione JWT
+    per tutti gli utenti (MEMBER, ADMIN, SUPERADMIN). L'accesso alle funzionalità
+    è controllato dal campo `role` nel token e dai permessi pagina (`pagePermissions`).
+
+    ## Autenticazione
+    Un solo endpoint: `POST /auth/login`.
+    Restituisce un **access token** JWT (15 min) e imposta il cookie httpOnly
+    `acr_refresh` (7 giorni) per il rinnovo silenzioso.
+
+    Tutte le chiamate protette richiedono:
+    ```
+    Authorization: Bearer <access_token>
+    ```
+
+    ## Ruoli
+    - `MEMBER`: accede alla dashboard con le sole pagine abilitate in `pagePermissions`
+    - `ADMIN`: gestisce soci, eventi, articoli, progetti, contatti, upload
+    - `SUPERADMIN`: tutto + modifica permessi e ruoli degli altri utenti
+
+  version: 2.0.0
+  contact:
+    email: robert.neagu@codeploy.it
+
+servers:
+  - url: http://localhost:3000
+    description: Sviluppo locale
+
+tags:
+  - name: General
+    description: Endpoint pubblici generali
+  - name: Auth
+    description: Autenticazione unica — login, refresh, logout, profilo
+  - name: Members
+    description: Gestione anagrafica soci — richiede ruolo ADMIN
+  - name: Registrations
+    description: Iscrizione pubblica nuovi soci
+  - name: Events
+    description: Gestione eventi
+  - name: Articles
+    description: Gestione articoli/news
+  - name: Projects
+    description: Gestione progetti associazione
+  - name: Contact
+    description: Modulo di contatto pubblico + gestione messaggi (admin)
+  - name: Uploads
+    description: Upload immagini su Cloudflare R2 — richiede ruolo ADMIN
+  - name: Site Settings
+    description: Impostazioni del sito (chiave/valore)
+  - name: Activity
+    description: Log attività recenti — richiede JWT
+
+components:
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT ottenuto da POST /auth/login
+
+  schemas:
+    # ── Auth ──────────────────────────────────────────────────────────────────
+    LoginDto:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@associazione.it
+        password:
+          type: string
+          example: password123
+
+    UpdateProfileDto:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: nuova@email.it
+        password:
+          type: string
+          minLength: 6
+          example: nuovaPassword123
+        currentPassword:
+          type: string
+          example: vecchiaPassword123
+          description: Obbligatorio quando si cambia la password
+
+    UpdatePermissionsDto:
+      type: object
+      required: [pagePermissions]
+      properties:
+        pagePermissions:
+          type: object
+          additionalProperties:
+            type: boolean
+          example:
+            dashboard: true
+            soci: true
+            eventi: false
+            articoli: true
+
+    PromoteRoleDto:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [MEMBER, ADMIN, SUPERADMIN]
+          example: ADMIN
+        boardRoles:
+          type: array
+          items:
+            type: string
+          example: [presidente, tesoriere]
+
+    UpdateMyMemberDto:
+      type: object
+      properties:
+        firstName:    { type: string, example: Mario }
+        lastName:     { type: string, example: Rossi }
+        fiscalCode:   { type: string, example: RSSMRA80A01H501Z }
+        birthDate:    { type: string, example: "1980-01-01" }
+        birthPlace:   { type: string, example: Roma }
+        gender:
+          type: string
+          enum: [m, f, altro]
+        docType:
+          type: string
+          enum: [ci, passaporto, patente]
+        docNumber:    { type: string, example: CA12345AB }
+        docExpiry:    { type: string, example: "2030-12-31" }
+        email:        { type: string, format: email }
+        phone:        { type: string, example: "+39 333 1234567" }
+        addressStreet:   { type: string, example: "Via Roma 1" }
+        addressZip:      { type: string, maxLength: 5, example: "00100" }
+        addressCity:     { type: string, example: Roma }
+        addressProvince: { type: string, maxLength: 2, example: RM }
+        privacyNewsletter:   { type: boolean }
+        privacyThirdParties: { type: boolean }
+
+    # ── Members ───────────────────────────────────────────────────────────────
+    UpdateSocioDto:
+      type: object
+      properties:
+        firstName:    { type: string }
+        lastName:     { type: string }
+        fiscalCode:   { type: string }
+        birthDate:    { type: string }
+        birthPlace:   { type: string }
+        gender:       { type: string, enum: [m, f, altro] }
+        docType:      { type: string, enum: [ci, passaporto, patente] }
+        docNumber:    { type: string }
+        docExpiry:    { type: string }
+        email:        { type: string, format: email }
+        phone:        { type: string }
+        addressStreet:   { type: string }
+        addressZip:      { type: string }
+        addressCity:     { type: string }
+        addressProvince: { type: string }
+        category:
+          type: string
+          enum: [ordinario, under26, sostenitore]
+        status:
+          type: string
+          enum: [active, suspended, expired]
+        paymentMethod:
+          type: string
+          enum: [online, contanti]
+        isMinor: { type: boolean }
+
+    # ── Registrations ─────────────────────────────────────────────────────────
+    GuardianDto:
+      type: object
+      required: [firstName, lastName, fiscalCode, relation, docType, docNumber, docExpiry]
+      properties:
+        firstName:  { type: string, example: Giuseppe }
+        lastName:   { type: string, example: Rossi }
+        fiscalCode: { type: string, example: RSSGPP60A01H501Z }
+        relation:
+          type: string
+          enum: [genitore, tutore_legale]
+        docType:
+          type: string
+          enum: [ci, passaporto, patente]
+        docNumber:  { type: string, example: AB123456 }
+        docExpiry:  { type: string, format: date, example: "2030-01-01" }
+
+    CreateRegistrationDto:
+      type: object
+      required:
+        - isMinor
+        - category
+        - firstName
+        - lastName
+        - fiscalCode
+        - birthDate
+        - birthPlace
+        - gender
+        - docType
+        - docNumber
+        - docExpiry
+        - email
+        - phone
+        - addressStreet
+        - addressZip
+        - addressCity
+        - addressProvince
+        - paymentMethod
+        - privacyBase
+      properties:
+        isMinor:    { type: boolean, example: false }
+        category:
+          type: string
+          enum: [ordinario, under26, sostenitore]
+          example: ordinario
+        firstName:  { type: string, example: Mario }
+        lastName:   { type: string, example: Bianchi }
+        fiscalCode: { type: string, example: BNCMRA90A01H501Z }
+        birthDate:  { type: string, format: date, example: "1990-01-01" }
+        birthPlace: { type: string, example: Milano }
+        gender:
+          type: string
+          enum: [m, f, altro]
+          example: m
+        docType:
+          type: string
+          enum: [ci, passaporto, patente]
+          example: ci
+        docNumber:  { type: string, example: AX9876543 }
+        docExpiry:  { type: string, format: date, example: "2028-12-31" }
+        email:      { type: string, format: email, example: mario.bianchi@email.it }
+        phone:      { type: string, example: "+39 333 9876543" }
+        addressStreet:   { type: string, example: "Via Garibaldi 10" }
+        addressZip:      { type: string, example: "20100" }
+        addressCity:     { type: string, example: Milano }
+        addressProvince: { type: string, example: MI }
+        paymentMethod:
+          type: string
+          enum: [online, contanti]
+          example: online
+        privacyBase:         { type: boolean, example: true }
+        privacyNewsletter:   { type: boolean, example: false }
+        privacyThirdParties: { type: boolean, example: false }
+        guardian:
+          $ref: '#/components/schemas/GuardianDto'
+          description: Obbligatorio se isMinor è true
+
+    # ── Events ────────────────────────────────────────────────────────────────
+    CreateEventDto:
+      type: object
+      required: [name, date, time, location]
+      properties:
+        name:        { type: string, example: "Serata Culturale" }
+        date:        { type: string, format: date, example: "2025-11-15" }
+        time:        { type: string, example: "20:00" }
+        location:    { type: string, example: "Sede Associazione, Via Roma 1" }
+        description: { type: string, example: "Una serata dedicata alla cultura locale." }
+        images:
+          type: array
+          items: { type: string, format: uri }
+          example: ["https://r2.example.com/events/img1.webp"]
+        cover: { type: string, format: uri }
+
+    # ── Articles ──────────────────────────────────────────────────────────────
+    ArticleBlockDto:
+      type: object
+      required: [paragraph]
+      properties:
+        subtitle:  { type: string, example: "Introduzione" }
+        paragraph: { type: string, example: "Testo del paragrafo..." }
+        image:     { type: string, format: uri }
+
+    CreateArticleDto:
+      type: object
+      required: [name, blocks]
+      properties:
+        name:
+          type: string
+          example: "L'estate dell'associazione"
+        categories:
+          type: array
+          items: { type: string }
+          example: [notizie, eventi]
+        blocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArticleBlockDto'
+        cover: { type: string, format: uri }
+
+    # ── Projects ──────────────────────────────────────────────────────────────
+    CreateProjectDto:
+      type: object
+      required: [title, description, category, status]
+      properties:
+        title:       { type: string, example: "Bibliomobile 2025" }
+        description: { type: string, example: "Progetto per portare libri nelle periferie." }
+        category:
+          type: string
+          enum: [cultura, tradizione, sociale, educazione]
+          example: cultura
+        status:
+          type: string
+          enum: [ongoing, completed]
+          example: ongoing
+        images:
+          type: array
+          items: { type: string, format: uri }
+        cover: { type: string, format: uri }
+
+    # ── Contact ───────────────────────────────────────────────────────────────
+    CreateContactDto:
+      type: object
+      required: [name, email, message]
+      properties:
+        name:    { type: string, example: "Laura Verdi" }
+        email:   { type: string, format: email, example: laura@email.it }
+        subject: { type: string, example: "Informazioni iscrizione" }
+        message: { type: string, example: "Vorrei sapere come iscrivermi all'associazione." }
+
+    ReplyContactDto:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string, example: "Grazie per averci contattato..." }
+
+    # ── Responses generiche ───────────────────────────────────────────────────
+    OkResponse:
+      type: object
+      properties:
+        ok: { type: boolean, example: true }
+
+    UrlsResponse:
+      type: object
+      properties:
+        urls:
+          type: array
+          items: { type: string, format: uri }
+
+    UrlResponse:
+      type: object
+      properties:
+        url: { type: string, format: uri }
+
+paths:
+  # ═══════════════════════════════════════════════════════════════════
+  # GENERAL
+  # ═══════════════════════════════════════════════════════════════════
+  /:
+    get:
+      tags: [General]
+      summary: Health check
+      description: Verifica che il server sia attivo.
+      responses:
+        '200':
+          description: Server attivo
+          content:
+            text/plain:
+              schema: { type: string, example: Hello World! }
+
+  /stats:
+    get:
+      tags: [General]
+      summary: Statistiche pubbliche
+      description: |
+        Statistiche aggregate pubbliche (numero soci, eventi, progetti).
+        Non richiede autenticazione.
+      responses:
+        '200':
+          description: Oggetto statistiche
+
+  # ═══════════════════════════════════════════════════════════════════
+  # AUTH
+  # ═══════════════════════════════════════════════════════════════════
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      description: |
+        Unico endpoint di autenticazione per tutti gli utenti (MEMBER, ADMIN, SUPERADMIN).
+        Restituisce un access token JWT (15 min) e imposta il cookie httpOnly
+        `acr_refresh` (7 giorni).
+
+        Il campo `role` nel token determina cosa l'utente può fare:
+        - `MEMBER` → accede alla dashboard con le sole pagine abilitate in `pagePermissions`
+        - `ADMIN` → gestione completa
+        - `SUPERADMIN` → gestione completa + modifica ruoli e permessi
+
+        Utenti con `status = rifiutato` non possono accedere.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginDto'
+            examples:
+              admin:
+                summary: Login admin
+                value: { email: admin@associazione.it, password: password123 }
+              socio:
+                summary: Login socio (MEMBER)
+                value: { email: mario.bianchi@email.it, password: passwordSocio123 }
+      responses:
+        '201':
+          description: Login riuscito
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+                  user:
+                    type: object
+                    properties:
+                      id:             { type: string }
+                      email:          { type: string }
+                      firstName:      { type: string }
+                      lastName:       { type: string }
+                      role:           { type: string, enum: [MEMBER, ADMIN, SUPERADMIN] }
+                      profileImage:   { type: string, nullable: true }
+                      boardRoles:     { type: array, items: { type: string } }
+                      pagePermissions: { type: object, nullable: true }
+        '401':
+          description: Credenziali non valide o utente rifiutato
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rinnova access token
+      description: |
+        Usa il cookie httpOnly `acr_refresh` per emettere un nuovo access token
+        senza richiedere le credenziali. Il cookie viene inviato automaticamente
+        dal browser; in Postman abilitare "Automatically follow redirects" e
+        il cookie jar.
+      responses:
+        '201':
+          description: Nuovo access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+        '401':
+          description: Refresh token assente o scaduto
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      description: Cancella il cookie `acr_refresh`. Non richiede JWT.
+      responses:
+        '201':
+          description: Logout eseguito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OkResponse'
+
+  /auth/check-email:
+    post:
+      tags: [Auth]
+      summary: Verifica email (primo accesso)
+      description: |
+        Controlla se un'email è registrata e se l'utente ha già una password.
+        Usato nel flusso di primo accesso per distinguere tra "imposta password"
+        e "login normale".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email, example: mario@email.it }
+      responses:
+        '201':
+          description: Stato email
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exists:      { type: boolean }
+                  hasPassword: { type: boolean }
+
+  /auth/set-password:
+    post:
+      tags: [Auth]
+      summary: Imposta password (primo accesso)
+      description: |
+        Permette a un utente invitato o a un socio appena iscritto di impostare
+        la propria password per il primo accesso. Fallisce se la password
+        è già stata impostata.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:    { type: string, format: email }
+                password: { type: string, minLength: 6 }
+      responses:
+        '201':
+          description: Password impostata, restituisce access token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token: { type: string }
+        '400':
+          description: Password già impostata
+        '404':
+          description: Email non trovata
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Profilo utente corrente
+      description: |
+        Restituisce id, email, nome, ruolo, `boardRoles` e `pagePermissions`
+        dell'utente autenticato. Usato all'avvio della dashboard per sapere
+        cosa mostrare.
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Dati profilo
+        '401':
+          description: Token assente o non valido
+    patch:
+      tags: [Auth]
+      summary: Aggiorna email / password
+      description: |
+        Aggiorna email e/o password dell'utente autenticato.
+        Per cambiare la password è obbligatorio inviare anche `currentPassword`.
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileDto'
+      responses:
+        '200':
+          description: Profilo aggiornato, restituisce nuovo access token
+        '401':
+          description: Password corrente errata
+    delete:
+      tags: [Auth]
+      summary: Elimina il proprio account
+      description: |
+        Elimina definitivamente l'account. Richiede la password corrente.
+        Non applicabile all'unico SUPERADMIN (operazione bloccata).
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword]
+              properties:
+                currentPassword: { type: string }
+      responses:
+        '200':
+          description: Account eliminato
+        '403':
+          description: Unico SUPERADMIN — eliminazione bloccata
+
+  /auth/me/tessera:
+    get:
+      tags: [Auth]
+      summary: Tessera associativa dell'utente corrente
+      description: |
+        Restituisce numero tessera, anno, scadenza, stato e `cardCode` visivo
+        (es. `ACR · 2025 · 4F2A`). Accessibile da qualsiasi utente autenticato.
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Dati tessera
+        '404':
+          description: Tessera non trovata
+
+  /auth/me/member:
+    get:
+      tags: [Auth]
+      summary: Anagrafica dell'utente corrente
+      description: |
+        Restituisce i dati anagrafici dell'utente autenticato (dati decriptati).
+        Include i dati del tutore se l'utente è un minore.
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Dati anagrafici
+    patch:
+      tags: [Auth]
+      summary: Aggiorna la propria anagrafica
+      description: PATCH parziale — invia solo i campi da modificare.
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMyMemberDto'
+      responses:
+        '200':
+          description: Anagrafica aggiornata
+
+  /auth/members/{id}/permissions:
+    patch:
+      tags: [Auth]
+      summary: Aggiorna permessi pagine di un utente (solo SUPERADMIN)
+      description: |
+        Modifica quali pagine della dashboard sono visibili per un utente.
+        `pagePermissions` è un oggetto chiave-valore: `{ "soci": true, "eventi": false, ... }`.
+        Solo SUPERADMIN può eseguire questa operazione.
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+          description: ID utente target
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePermissionsDto'
+      responses:
+        '200':
+          description: Permessi aggiornati
+        '403':
+          description: Operazione riservata al SUPERADMIN
+
+  /auth/members/{id}/role:
+    patch:
+      tags: [Auth]
+      summary: Cambia ruolo di un utente (solo SUPERADMIN)
+      description: |
+        Promuove o retrocede il ruolo di un utente.
+        Solo SUPERADMIN può operare. Non è possibile retrocedere l'unico SUPERADMIN.
+        `boardRoles` è opzionale: ruoli di organo (es. `["presidente"]`).
+        Se il ruolo diventa MEMBER, `boardRoles` viene svuotato automaticamente.
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PromoteRoleDto'
+      responses:
+        '200':
+          description: Ruolo aggiornato
+        '403':
+          description: Privilegi insufficienti o unico SUPERADMIN
+
+  # ═══════════════════════════════════════════════════════════════════
+  # MEMBERS (ADMIN)
+  # ═══════════════════════════════════════════════════════════════════
+  /members:
+    get:
+      tags: [Members]
+      summary: Lista tutti i soci
+      description: Elenco completo con anagrafica, categoria, stato e tessera. Richiede ADMIN.
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Array di soci
+        '403':
+          description: Accesso negato
+
+  /members/donation-stats:
+    get:
+      tags: [Members]
+      summary: Statistiche quote/donazioni
+      description: |
+        Totale incassato, suddivisione per categoria e per metodo di pagamento.
+        Richiede ADMIN.
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Statistiche donazioni
+
+  /members/{id}:
+    get:
+      tags: [Members]
+      summary: Dettaglio socio
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Dati socio
+        '404':
+          description: Socio non trovato
+    patch:
+      tags: [Members]
+      summary: Aggiorna dati socio
+      description: |
+        PATCH parziale. I campi amministrativi (`category`, `status`,
+        `paymentMethod`, `isMinor`) sono modificabili solo da ADMIN.
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSocioDto'
+      responses:
+        '200':
+          description: Socio aggiornato
+    delete:
+      tags: [Members]
+      summary: Elimina socio
+      description: Operazione irreversibile. Richiede ADMIN.
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Socio eliminato
+        '403':
+          description: Privilegi insufficienti
+
+  # ═══════════════════════════════════════════════════════════════════
+  # REGISTRATIONS (PUBBLICO)
+  # ═══════════════════════════════════════════════════════════════════
+  /api/registrations:
+    post:
+      tags: [Registrations]
+      summary: Nuova iscrizione socio
+      description: |
+        Endpoint pubblico — non richiede autenticazione.
+
+        Il sistema:
+        1. Crea il record `Member` con i dati anagrafici (cifrati)
+        2. Genera la tessera con numero progressivo e anno corrente
+        3. Se `paymentMethod = online` invia email con link di pagamento (Resend)
+        4. Se `isMinor = true` il campo `guardian` è obbligatorio
+
+        **Categorie:**
+        - `ordinario` — quota standard
+        - `under26` — quota ridotta under 26
+        - `sostenitore` — donazione libera
+
+        Dopo l'iscrizione il socio può accedere con `POST /auth/check-email`
+        → `POST /auth/set-password` → `POST /auth/login`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRegistrationDto'
+            examples:
+              adulto_online:
+                summary: Adulto con pagamento online
+                value:
+                  isMinor: false
+                  category: ordinario
+                  firstName: Mario
+                  lastName: Bianchi
+                  fiscalCode: BNCMRA90A01H501Z
+                  birthDate: "1990-01-01"
+                  birthPlace: Milano
+                  gender: m
+                  docType: ci
+                  docNumber: AX9876543
+                  docExpiry: "2028-12-31"
+                  email: mario.bianchi@email.it
+                  phone: "+39 333 9876543"
+                  addressStreet: "Via Garibaldi 10"
+                  addressZip: "20100"
+                  addressCity: Milano
+                  addressProvince: MI
+                  paymentMethod: online
+                  privacyBase: true
+                  privacyNewsletter: false
+                  privacyThirdParties: false
+              minore:
+                summary: Minorenne con tutore
+                value:
+                  isMinor: true
+                  category: under26
+                  firstName: Sofia
+                  lastName: Verdi
+                  fiscalCode: VRDSFO10A41H501Z
+                  birthDate: "2010-01-01"
+                  birthPlace: Roma
+                  gender: f
+                  docType: ci
+                  docNumber: YZ123456
+                  docExpiry: "2027-06-30"
+                  email: sofia.verdi@email.it
+                  phone: "+39 333 1111111"
+                  addressStreet: "Via dei Fiori 5"
+                  addressZip: "00100"
+                  addressCity: Roma
+                  addressProvince: RM
+                  paymentMethod: contanti
+                  privacyBase: true
+                  guardian:
+                    firstName: Giuseppe
+                    lastName: Verdi
+                    fiscalCode: VRDGPP70A01H501Z
+                    relation: genitore
+                    docType: ci
+                    docNumber: AB123456
+                    docExpiry: "2030-01-01"
+      responses:
+        '201':
+          description: Iscrizione creata
+        '400':
+          description: Dati non validi
+        '409':
+          description: Email o codice fiscale già registrati
+
+  # ═══════════════════════════════════════════════════════════════════
+  # EVENTS
+  # ═══════════════════════════════════════════════════════════════════
+  /events:
+    get:
+      tags: [Events]
+      summary: Lista eventi (pubblico)
+      description: Tutti gli eventi ordinati per data. Non richiede autenticazione.
+      responses:
+        '200':
+          description: Array di eventi
+    post:
+      tags: [Events]
+      summary: Crea evento (ADMIN)
+      description: |
+        Le immagini devono essere già caricate tramite `POST /uploads/events`
+        e i relativi URL passati in `images` e `cover`.
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventDto'
+      responses:
+        '201':
+          description: Evento creato
+
+  /events/{slug}:
+    get:
+      tags: [Events]
+      summary: Dettaglio evento per slug (pubblico)
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+          example: serata-culturale-2025
+      responses:
+        '200':
+          description: Dati evento
+        '404':
+          description: Evento non trovato
+
+  /events/{id}:
+    delete:
+      tags: [Events]
+      summary: Elimina evento (ADMIN)
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+          description: ID evento (cuid)
+      responses:
+        '200':
+          description: Evento eliminato
+
+  # ═══════════════════════════════════════════════════════════════════
+  # ARTICLES
+  # ═══════════════════════════════════════════════════════════════════
+  /articles:
+    get:
+      tags: [Articles]
+      summary: Lista articoli (pubblico)
+      description: Tutti gli articoli ordinati per data di creazione (più recenti prima).
+      responses:
+        '200':
+          description: Array di articoli
+    post:
+      tags: [Articles]
+      summary: Crea articolo (ADMIN)
+      description: |
+        Il contenuto è strutturato in blocchi: ogni blocco ha `paragraph` (obbligatorio),
+        `subtitle` e `image` opzionali. Gli URL immagine vanno caricati prima
+        tramite `POST /uploads/articles`.
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateArticleDto'
+      responses:
+        '201':
+          description: Articolo creato
+    delete:
+      tags: [Articles]
+      summary: Elimina multipli articoli (ADMIN)
+      description: Elimina più articoli in una sola chiamata passando un array di ID.
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  items: { type: string }
+                  example: ["clx1abc123", "clx2def456"]
+      responses:
+        '200':
+          description: Articoli eliminati
+
+  /articles/{id}:
+    get:
+      tags: [Articles]
+      summary: Dettaglio articolo (pubblico)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Dati articolo
+        '404':
+          description: Articolo non trovato
+    delete:
+      tags: [Articles]
+      summary: Elimina articolo singolo (ADMIN)
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Articolo eliminato
+
+  # ═══════════════════════════════════════════════════════════════════
+  # PROJECTS
+  # ═══════════════════════════════════════════════════════════════════
+  /projects:
+    get:
+      tags: [Projects]
+      summary: Lista progetti (pubblico)
+      responses:
+        '200':
+          description: Array di progetti
+    post:
+      tags: [Projects]
+      summary: Crea progetto (ADMIN)
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectDto'
+      responses:
+        '201':
+          description: Progetto creato
+    delete:
+      tags: [Projects]
+      summary: Elimina multipli progetti (ADMIN)
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  items: { type: string }
+                  example: ["clxaaa111", "clxbbb222"]
+      responses:
+        '200':
+          description: Progetti eliminati
+
+  /projects/{id}:
+    get:
+      tags: [Projects]
+      summary: Dettaglio progetto (pubblico)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Dati progetto
+        '404':
+          description: Progetto non trovato
+    patch:
+      tags: [Projects]
+      summary: Aggiorna progetto (ADMIN)
+      description: PATCH parziale. Tipicamente usato per passare da `ongoing` a `completed`.
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectDto'
+      responses:
+        '200':
+          description: Progetto aggiornato
+    delete:
+      tags: [Projects]
+      summary: Elimina progetto singolo (ADMIN)
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Progetto eliminato
+
+  # ═══════════════════════════════════════════════════════════════════
+  # CONTACT
+  # ═══════════════════════════════════════════════════════════════════
+  /contact:
+    post:
+      tags: [Contact]
+      summary: Invia messaggio di contatto (pubblico)
+      description: |
+        Il messaggio viene salvato nel DB e inviato via email tramite Resend.
+        Non richiede autenticazione.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateContactDto'
+      responses:
+        '201':
+          description: Messaggio inviato
+    get:
+      tags: [Contact]
+      summary: Lista messaggi (ADMIN)
+      description: Tutti i messaggi ricevuti ordinati per data. Richiede JWT.
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Array di messaggi
+    delete:
+      tags: [Contact]
+      summary: Elimina multipli messaggi (ADMIN)
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ids]
+              properties:
+                ids:
+                  type: array
+                  items: { type: string }
+                  example: ["clx1msg111", "clx2msg222"]
+      responses:
+        '200':
+          description: Messaggi eliminati
+
+  /contact/unread-count:
+    get:
+      tags: [Contact]
+      summary: Numero messaggi non letti (ADMIN)
+      description: Usato per il badge di notifica nella dashboard.
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Conteggio
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer, example: 3 }
+
+  /contact/{id}/read:
+    patch:
+      tags: [Contact]
+      summary: Segna messaggio come letto (ADMIN)
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Messaggio marcato come letto
+
+  /contact/{id}/reply:
+    post:
+      tags: [Contact]
+      summary: Rispondi a un messaggio (ADMIN)
+      description: |
+        Invia una risposta via email (Resend) all'autore del messaggio.
+        Nome e email del mittente vengono presi dall'utente autenticato.
+      security:
+        - Bearer: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplyContactDto'
+      responses:
+        '201':
+          description: Risposta inviata
+
+  # ═══════════════════════════════════════════════════════════════════
+  # UPLOADS (ADMIN)
+  # ═══════════════════════════════════════════════════════════════════
+  /uploads/events:
+    post:
+      tags: [Uploads]
+      summary: Upload immagini eventi
+      description: |
+        Carica fino a 10 immagini. Le immagini vengono ridimensionate
+        (max 1920px larghezza) e convertite in WebP (qualità 80) su Cloudflare R2.
+        Restituisce gli URL da usare in `CreateEventDto.images` / `cover`.
+        Campo form: `files`. Max 15 MB per file.
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  items: { type: string, format: binary }
+      responses:
+        '201':
+          description: URL immagini caricate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrlsResponse'
+
+  /uploads/articles:
+    post:
+      tags: [Uploads]
+      summary: Upload immagini articoli
+      description: |
+        Come `/uploads/events`. URL da usare in `ArticleBlockDto.image`
+        o `CreateArticleDto.cover`.
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  items: { type: string, format: binary }
+      responses:
+        '201':
+          description: URL immagini
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrlsResponse'
+
+  /uploads/projects:
+    post:
+      tags: [Uploads]
+      summary: Upload immagini progetti
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  items: { type: string, format: binary }
+      responses:
+        '201':
+          description: URL immagini
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrlsResponse'
+
+  /uploads/settings:
+    post:
+      tags: [Uploads]
+      summary: Upload immagine impostazioni sito
+      description: |
+        Carica 1 immagine (es. logo, banner). L'URL restituito va usato
+        come valore in `PUT /site-settings/{key}`.
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  maxItems: 1
+                  items: { type: string, format: binary }
+      responses:
+        '201':
+          description: URL immagine
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrlsResponse'
+
+  /uploads/placeholders:
+    post:
+      tags: [Uploads]
+      summary: Upload immagine placeholder
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  maxItems: 1
+                  items: { type: string, format: binary }
+      responses:
+        '201':
+          description: URL placeholder
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrlsResponse'
+
+  /uploads/avatar:
+    post:
+      tags: [Uploads]
+      summary: Upload avatar socio (ADMIN)
+      description: |
+        Carica l'avatar di un socio. Ridimensionato a 400×400px, convertito in WebP.
+        Campo form: `file` (singolo file, non array).
+      security:
+        - Bearer: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '201':
+          description: URL avatar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UrlResponse'
+
+  # ═══════════════════════════════════════════════════════════════════
+  # SITE SETTINGS
+  # ═══════════════════════════════════════════════════════════════════
+  /site-settings:
+    get:
+      tags: [Site Settings]
+      summary: Tutte le impostazioni (pubblico)
+      description: |
+        Restituisce tutte le chiavi/valori del sito (nome, logo, colori, testi).
+        Usato dal frontend al bootstrap per configurare la UI. Pubblico.
+      responses:
+        '200':
+          description: Oggetto impostazioni
+
+  /site-settings/{key}:
+    put:
+      tags: [Site Settings]
+      summary: Aggiorna impostazione (ADMIN)
+      description: |
+        Imposta o aggiorna il valore di una chiave. Il valore è sempre una stringa.
+
+        **Chiavi comuni:** `associationName`, `logoUrl`, `primaryColor`,
+        `contactEmail`, `description`.
+      security:
+        - Bearer: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema: { type: string }
+          example: associationName
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [value]
+              properties:
+                value: { type: string, example: "Associazione Culturale XYZ" }
+      responses:
+        '200':
+          description: Impostazione aggiornata
+
+  # ═══════════════════════════════════════════════════════════════════
+  # ACTIVITY
+  # ═══════════════════════════════════════════════════════════════════
+  /activity:
+    get:
+      tags: [Activity]
+      summary: Log attività recenti
+      description: |
+        Ultime attività del sistema (iscrizioni, login, modifiche).
+        Usato nel pannello di monitoraggio della dashboard. Richiede JWT.
+      security:
+        - Bearer: []
+      responses:
+        '200':
+          description: Array di attività recenti
+        '401':
+          description: Token assente o non valido

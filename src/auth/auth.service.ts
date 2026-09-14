@@ -51,7 +51,7 @@ export class AuthService {
 
   async login(dto: LoginDto, res: Response) {
     const member = await this.prisma.member.findFirst({
-      where: { email: dto.email, deletedAt: null },
+      where: { email: dto.email, deletedAt: null, status: { not: 'rifiutato' } },
     });
     if (!member || !member.passwordHash)
       throw new UnauthorizedException('Credenziali non valide');
