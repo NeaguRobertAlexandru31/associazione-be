@@ -4,5 +4,21 @@
   "sourceRoot": "src",
   "compilerOptions": {
     "deleteOutDir": true
+  },
+  "projects": {
+    "main": {
+      "type": "application",
+      "root": ".",
+      "entryFile": "main",
+      "sourceRoot": "src",
+      "compilerOptions": { "deleteOutDir": true }
+    },
+    "lambda": {
+      "type": "application",
+      "root": ".",
+      "entryFile": "lambda",
+      "sourceRoot": "src",
+      "compilerOptions": { "deleteOutDir": false }
+    }
   }
 }

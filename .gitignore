@@ -1,4 +1,5 @@
 node_modules
 dist
+lambda-bundle
 .env
 src/generated/

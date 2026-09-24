@@ -14,7 +14,7 @@ import { randomBytes } from 'crypto';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const sharp = require('sharp') as typeof import('sharp');
 import { AdminGuard } from '../auth/guards/admin.guard';
-import { R2Service } from '../r2/r2.service';
+import { S3Service } from '../s3/s3.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 const imageFilter = (_req: any, file: Express.Multer.File, cb: any) => {
@@ -27,7 +27,7 @@ const memStorage = memoryStorage();
 @UseGuards(AdminGuard)
 export class UploadsController {
   constructor(
-    private readonly r2: R2Service,
+    private readonly r2: S3Service,
     private readonly prisma: PrismaService,
   ) {}
 

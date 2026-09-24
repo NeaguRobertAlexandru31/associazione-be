@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { Resend } from 'resend';
+import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 
 @Injectable()
 export class MailService {
-  private get resend() {
-    return new Resend(process.env.RESEND_API_KEY);
+  private get client() {
+    return new SESClient({ region: process.env.AWS_REGION_NAME ?? 'eu-central-1' });
   }
 
   async sendReply(opts: {
@@ -15,15 +15,24 @@ export class MailService {
     subject:   string;
     message:   string;
   }): Promise<void> {
-    const { error } = await this.resend.emails.send({
-      from:     `${opts.fromName} <${process.env.MAIL_FROM}>`,
-      replyTo:  opts.fromEmail,
-      to:       `${opts.toName} <${opts.toEmail}>`,
-      subject:  opts.subject,
-      text:     opts.message,
-      html:     `<p style="white-space:pre-wrap">${opts.message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`,
-    });
+    const escaped = opts.message
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
 
-    if (error) throw new Error(error.message);
+    await this.client.send(new SendEmailCommand({
+      Source:           `${opts.fromName} <${process.env.MAIL_FROM}>`,
+      ReplyToAddresses: [opts.fromEmail],
+      Destination: {
+        ToAddresses: [`${opts.toName} <${opts.toEmail}>`],
+      },
+      Message: {
+        Subject: { Data: opts.subject, Charset: 'UTF-8' },
+        Body: {
+          Text: { Data: opts.message,  Charset: 'UTF-8' },
+          Html: { Data: `<p style="white-space:pre-wrap">${escaped}</p>`, Charset: 'UTF-8' },
+        },
+      },
+    }));
   }
 }

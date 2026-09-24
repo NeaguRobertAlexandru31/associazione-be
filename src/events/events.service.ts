@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { R2Service } from '../r2/r2.service';
+import { S3Service } from '../s3/s3.service';
 import { CreateEventDto } from './dto/create-event.dto';
 
 function slugify(text: string): string {
@@ -31,7 +31,7 @@ const EVENT_SELECT = {
 export class EventsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly r2:     R2Service,
+    private readonly r2:     S3Service,
   ) {}
 
   getAll() {

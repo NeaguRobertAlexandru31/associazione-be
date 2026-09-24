@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { R2Service } from '../r2/r2.service';
+import { S3Service } from '../s3/s3.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 
 const ARTICLE_SELECT = {
@@ -18,7 +18,7 @@ const ARTICLE_SELECT = {
 export class ArticlesService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly r2:     R2Service,
+    private readonly r2:     S3Service,
   ) {}
 
   getAll() {
