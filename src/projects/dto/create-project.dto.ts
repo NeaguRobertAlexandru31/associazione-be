@@ -1,14 +1,20 @@
-import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export enum ProjectCategory {
-  cultura    = 'cultura',
+  cultura = 'cultura',
   tradizione = 'tradizione',
-  sociale    = 'sociale',
+  sociale = 'sociale',
   educazione = 'educazione',
 }
 
 export enum ProjectStatus {
-  ongoing   = 'ongoing',
+  ongoing = 'ongoing',
   completed = 'completed',
 }
 

@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Get, Param, Patch, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { UpdateSocioDto } from './dto/update-socio.dto';

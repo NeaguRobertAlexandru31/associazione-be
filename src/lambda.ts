@@ -2,7 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe } from '@nestjs/common';
 import { configure as serverlessExpress } from '@vendia/serverless-express';
-import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
+import {
+  SecretsManagerClient,
+  GetSecretValueCommand,
+} from '@aws-sdk/client-secrets-manager';
 import type { Handler, Context, Callback } from 'aws-lambda';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cookieParser = require('cookie-parser');
@@ -15,8 +18,12 @@ async function loadSecretsIntoEnv(): Promise<void> {
   const dbSecretArn = process.env.DB_SECRET_ARN;
   if (!dbSecretArn || process.env.DATABASE_URL) return;
 
-  const client = new SecretsManagerClient({ region: process.env.AWS_REGION_NAME ?? 'eu-central-1' });
-  const { SecretString } = await client.send(new GetSecretValueCommand({ SecretId: dbSecretArn }));
+  const client = new SecretsManagerClient({
+    region: process.env.AWS_REGION_NAME ?? 'eu-central-1',
+  });
+  const { SecretString } = await client.send(
+    new GetSecretValueCommand({ SecretId: dbSecretArn }),
+  );
   if (!SecretString) return;
 
   const { username, password, host, port, dbname } = JSON.parse(SecretString);
@@ -42,9 +49,9 @@ async function bootstrap(): Promise<Handler> {
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist:            true,
+      whitelist: true,
       forbidNonWhitelisted: true,
-      transform:            true,
+      transform: true,
     }),
   );
 

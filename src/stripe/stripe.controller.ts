@@ -5,13 +5,15 @@ import { StripeWebhookService } from './stripe-webhook.service';
 import { StripeService } from './stripe.service';
 
 class DonationCheckoutDto {
-  @IsNumber() @Min(1)
+  @IsNumber()
+  @Min(1)
   amount!: number;
 
   @IsIn(['once', 'monthly'])
   frequency!: 'once' | 'monthly';
 
-  @IsOptional() @IsEmail()
+  @IsOptional()
+  @IsEmail()
   email?: string;
 }
 

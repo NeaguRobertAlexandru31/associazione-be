@@ -8,7 +8,9 @@ import {
 @Injectable()
 export class S3Service {
   private get client() {
-    return new S3Client({ region: process.env.AWS_REGION_NAME ?? 'eu-central-1' });
+    return new S3Client({
+      region: process.env.AWS_REGION_NAME ?? 'eu-central-1',
+    });
   }
 
   private get bucket() {
@@ -19,13 +21,17 @@ export class S3Service {
     return process.env.CDN_URL!;
   }
 
-  async upload(key: string, buffer: Buffer, contentType = 'image/webp'): Promise<string> {
+  async upload(
+    key: string,
+    buffer: Buffer,
+    contentType = 'image/webp',
+  ): Promise<string> {
     await this.client.send(
       new PutObjectCommand({
-        Bucket:       this.bucket,
-        Key:          key,
-        Body:         buffer,
-        ContentType:  contentType,
+        Bucket: this.bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
         CacheControl: 'public, max-age=31536000, immutable',
       }),
     );
@@ -47,6 +53,6 @@ export class S3Service {
   }
 
   async deleteMany(urls: string[]): Promise<void> {
-    await Promise.all(urls.map(u => this.delete(u)));
+    await Promise.all(urls.map((u) => this.delete(u)));
   }
 }

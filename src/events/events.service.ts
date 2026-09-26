@@ -31,7 +31,7 @@ const EVENT_SELECT = {
 export class EventsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly r2:     S3Service,
+    private readonly r2: S3Service,
   ) {}
 
   getAll() {
@@ -51,7 +51,10 @@ export class EventsService {
   }
 
   async backfillSlugs() {
-    const events = await this.prisma.event.findMany({ where: { slug: null }, select: { id: true, name: true } });
+    const events = await this.prisma.event.findMany({
+      where: { slug: null },
+      select: { id: true, name: true },
+    });
     for (const e of events) {
       await this.prisma.event.update({
         where: { id: e.id },
@@ -61,20 +64,20 @@ export class EventsService {
   }
 
   create(dto: CreateEventDto) {
-    const id   = randomUUID();
+    const id = randomUUID();
     const slug = `${slugify(dto.name)}-${id.slice(0, 8)}`;
 
     return this.prisma.event.create({
       data: {
         id,
         slug,
-        name:        dto.name,
-        date:        new Date(dto.date),
-        time:        dto.time,
-        location:    dto.location,
+        name: dto.name,
+        date: new Date(dto.date),
+        time: dto.time,
+        location: dto.location,
         description: dto.description,
-        images:      dto.images ?? [],
-        cover:       dto.cover,
+        images: dto.images ?? [],
+        cover: dto.cover,
       },
       select: EVENT_SELECT,
     });

@@ -8,7 +8,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../encryption/encryption.service';
 import { MailService } from '../mail/mail.service';
 import { StripeService } from '../stripe/stripe.service';
-import { CreateRegistrationDto, MemberCategory, PaymentMethod } from './dto/create-registration.dto';
+import {
+  CreateRegistrationDto,
+  MemberCategory,
+  PaymentMethod,
+} from './dto/create-registration.dto';
 
 @Injectable()
 export class RegistrationsService {
@@ -43,14 +47,19 @@ export class RegistrationsService {
       const age = this.calcAge(birth, now);
       if (age >= 26) {
         throw new UnprocessableEntityException(
-          'La categoria under26 richiede un\'età inferiore a 26 anni',
+          "La categoria under26 richiede un'età inferiore a 26 anni",
         );
       }
     }
 
     const fiscalCodeHash = this.enc.hmac(dto.fiscalCode);
     const duplicate = await this.prisma.member.findFirst({
-      where: { fiscalCodeHash, membershipYear, status: { not: 'rifiutato' }, deletedAt: null },
+      where: {
+        fiscalCodeHash,
+        membershipYear,
+        status: { not: 'rifiutato' },
+        deletedAt: null,
+      },
     });
     if (duplicate) {
       throw new ConflictException(
@@ -65,42 +74,44 @@ export class RegistrationsService {
 
     const member = await this.prisma.member.create({
       data: {
-        role:                'MEMBER',
-        isMinor:             dto.isMinor,
-        category:            dto.category,
-        firstName:           dto.firstName,
-        lastName:            dto.lastName,
-        fiscalCode:          this.enc.encrypt(dto.fiscalCode.toUpperCase()),
+        role: 'MEMBER',
+        isMinor: dto.isMinor,
+        category: dto.category,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        fiscalCode: this.enc.encrypt(dto.fiscalCode.toUpperCase()),
         fiscalCodeHash,
-        birthDate:           new Date(dto.birthDate),
-        birthPlace:          this.enc.encrypt(dto.birthPlace),
-        gender:              dto.gender,
-        docType:             dto.docType,
-        docNumber:           this.enc.encrypt(dto.docNumber),
-        docExpiry:           new Date(dto.docExpiry),
-        email:               dto.email,
-        phone:               this.enc.encrypt(dto.phone),
-        addressStreet:       this.enc.encrypt(dto.addressStreet),
-        addressZip:          this.enc.encrypt(dto.addressZip),
-        addressCity:         this.enc.encrypt(dto.addressCity),
-        addressProvince:     this.enc.encrypt(dto.addressProvince),
+        birthDate: new Date(dto.birthDate),
+        birthPlace: this.enc.encrypt(dto.birthPlace),
+        gender: dto.gender,
+        docType: dto.docType,
+        docNumber: this.enc.encrypt(dto.docNumber),
+        docExpiry: new Date(dto.docExpiry),
+        email: dto.email,
+        phone: this.enc.encrypt(dto.phone),
+        addressStreet: this.enc.encrypt(dto.addressStreet),
+        addressZip: this.enc.encrypt(dto.addressZip),
+        addressCity: this.enc.encrypt(dto.addressCity),
+        addressProvince: this.enc.encrypt(dto.addressProvince),
         status,
         membershipYear,
-        paymentMethod:       dto.paymentMethod,
-        privacyBase:         dto.privacyBase,
-        privacyNewsletter:   dto.privacyNewsletter  ?? false,
+        paymentMethod: dto.paymentMethod,
+        privacyBase: dto.privacyBase,
+        privacyNewsletter: dto.privacyNewsletter ?? false,
         privacyThirdParties: dto.privacyThirdParties ?? false,
         ...(dto.guardian && {
           guardian: {
             create: {
-              firstName:     dto.guardian.firstName,
-              lastName:      dto.guardian.lastName,
-              fiscalCode:    this.enc.encrypt(dto.guardian.fiscalCode.toUpperCase()),
+              firstName: dto.guardian.firstName,
+              lastName: dto.guardian.lastName,
+              fiscalCode: this.enc.encrypt(
+                dto.guardian.fiscalCode.toUpperCase(),
+              ),
               fiscalCodeHash: this.enc.hmac(dto.guardian.fiscalCode),
-              relation:      dto.guardian.relation,
-              docType:       dto.guardian.docType,
-              docNumber:     this.enc.encrypt(dto.guardian.docNumber),
-              docExpiry:     new Date(dto.guardian.docExpiry),
+              relation: dto.guardian.relation,
+              docType: dto.guardian.docType,
+              docNumber: this.enc.encrypt(dto.guardian.docNumber),
+              docExpiry: new Date(dto.guardian.docExpiry),
             },
           },
         }),
@@ -108,41 +119,45 @@ export class RegistrationsService {
       include: { guardian: true },
     });
 
-    this.mail.sendWelcome({
-      firstName: dto.firstName,
-      lastName:  dto.lastName,
-      email:     dto.email,
-      category:  dto.category,
-      year:      membershipYear,
-    }).catch(() => {});
+    this.mail
+      .sendWelcome({
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        email: dto.email,
+        category: dto.category,
+        year: membershipYear,
+      })
+      .catch(() => {});
 
     const adminEmail = process.env.ADMIN_EMAIL;
     if (adminEmail) {
-      this.mail.sendNewRegistrationAlert({
-        firstName:     dto.firstName,
-        lastName:      dto.lastName,
-        email:         dto.email,
-        category:      dto.category,
-        year:          membershipYear,
-        paymentMethod: dto.paymentMethod,
-        adminEmail,
-      }).catch(() => {});
+      this.mail
+        .sendNewRegistrationAlert({
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          email: dto.email,
+          category: dto.category,
+          year: membershipYear,
+          paymentMethod: dto.paymentMethod,
+          adminEmail,
+        })
+        .catch(() => {});
     }
 
     const response: Record<string, unknown> = {
-      id:             member.id,
-      status:         member.status,
+      id: member.id,
+      status: member.status,
       membershipYear: member.membershipYear,
     };
 
     if (dto.paymentMethod === PaymentMethod.online) {
       response.payment_url = await this.stripe.createCheckoutSession({
-        memberId:  member.id,
+        memberId: member.id,
         firstName: dto.firstName,
-        lastName:  dto.lastName,
-        email:     dto.email,
-        category:  dto.category,
-        year:      membershipYear,
+        lastName: dto.lastName,
+        email: dto.email,
+        category: dto.category,
+        year: membershipYear,
       });
     }
 

@@ -233,3 +233,23 @@ model OtpCode {
   usedAt    DateTime?
   createdAt DateTime  @default(now())
 }
+
+enum DocumentCategory {
+  verbale
+  statuto
+  regolamento
+  bilancio
+  altro
+}
+
+model Document {
+  id          String           @id @default(uuid())
+  title       String
+  description String?
+  category    DocumentCategory
+  fileUrl     String
+  fileName    String
+  fileSize    Int
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+}

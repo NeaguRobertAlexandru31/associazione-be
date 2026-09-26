@@ -13,30 +13,30 @@ import {
 } from 'class-validator';
 
 export enum MemberCategory {
-  ordinario  = 'ordinario',
-  under26    = 'under26',
+  ordinario = 'ordinario',
+  under26 = 'under26',
   sostenitore = 'sostenitore',
 }
 
 export enum MemberGender {
-  m     = 'm',
-  f     = 'f',
+  m = 'm',
+  f = 'f',
   altro = 'altro',
 }
 
 export enum DocType {
-  ci          = 'ci',
-  passaporto  = 'passaporto',
-  patente     = 'patente',
+  ci = 'ci',
+  passaporto = 'passaporto',
+  patente = 'patente',
 }
 
 export enum PaymentMethod {
-  online   = 'online',
+  online = 'online',
   contanti = 'contanti',
 }
 
 export enum GuardianRelation {
-  genitore      = 'genitore',
+  genitore = 'genitore',
   tutore_legale = 'tutore_legale',
 }
 
@@ -52,7 +52,9 @@ export class GuardianDto {
   lastName: string;
 
   @IsNotEmpty()
-  @Matches(FISCAL_CODE_REGEX, { message: 'Codice fiscale del tutore non valido' })
+  @Matches(FISCAL_CODE_REGEX, {
+    message: 'Codice fiscale del tutore non valido',
+  })
   fiscalCode: string;
 
   @IsEnum(GuardianRelation)
@@ -145,7 +147,7 @@ export class CreateRegistrationDto {
   @IsBoolean()
   privacyThirdParties?: boolean;
 
-  @ValidateIf(o => o.isMinor === true)
+  @ValidateIf((o) => o.isMinor === true)
   @ValidateNested()
   @Type(() => GuardianDto)
   guardian?: GuardianDto;

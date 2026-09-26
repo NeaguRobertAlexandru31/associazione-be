@@ -4,22 +4,22 @@ import { S3Service } from '../s3/s3.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 
 const PROJECT_SELECT = {
-  id:          true,
-  title:       true,
+  id: true,
+  title: true,
   description: true,
-  category:    true,
-  status:      true,
-  images:      true,
-  cover:       true,
-  createdAt:   true,
-  updatedAt:   true,
+  category: true,
+  status: true,
+  images: true,
+  cover: true,
+  createdAt: true,
+  updatedAt: true,
 } as const;
 
 @Injectable()
 export class ProjectsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly r2:     S3Service,
+    private readonly r2: S3Service,
   ) {}
 
   getAll() {
@@ -30,7 +30,10 @@ export class ProjectsService {
   }
 
   async getById(id: string) {
-    const project = await this.prisma.project.findUnique({ where: { id }, select: PROJECT_SELECT });
+    const project = await this.prisma.project.findUnique({
+      where: { id },
+      select: PROJECT_SELECT,
+    });
     if (!project) throw new NotFoundException('Progetto non trovato');
     return project;
   }
@@ -38,12 +41,12 @@ export class ProjectsService {
   create(dto: CreateProjectDto) {
     return this.prisma.project.create({
       data: {
-        title:       dto.title,
+        title: dto.title,
         description: dto.description,
-        category:    dto.category,
-        status:      dto.status,
-        images:      dto.images ?? [],
-        cover:       dto.cover,
+        category: dto.category,
+        status: dto.status,
+        images: dto.images ?? [],
+        cover: dto.cover,
       },
       select: PROJECT_SELECT,
     });
@@ -55,12 +58,12 @@ export class ProjectsService {
     return this.prisma.project.update({
       where: { id },
       data: {
-        ...(dto.title       !== undefined && { title:       dto.title }),
+        ...(dto.title !== undefined && { title: dto.title }),
         ...(dto.description !== undefined && { description: dto.description }),
-        ...(dto.category    !== undefined && { category:    dto.category }),
-        ...(dto.status      !== undefined && { status:      dto.status }),
-        ...(dto.images      !== undefined && { images:      dto.images }),
-        ...(dto.cover       !== undefined && { cover:       dto.cover }),
+        ...(dto.category !== undefined && { category: dto.category }),
+        ...(dto.status !== undefined && { status: dto.status }),
+        ...(dto.images !== undefined && { images: dto.images }),
+        ...(dto.cover !== undefined && { cover: dto.cover }),
       },
       select: PROJECT_SELECT,
     });
@@ -80,7 +83,9 @@ export class ProjectsService {
       where: { id: { in: ids } },
       select: { images: true, cover: true },
     });
-    await this.r2.deleteMany(projects.flatMap(p => [...p.images, ...(p.cover ? [p.cover] : [])]));
+    await this.r2.deleteMany(
+      projects.flatMap((p) => [...p.images, ...(p.cover ? [p.cover] : [])]),
+    );
     return this.prisma.project.deleteMany({ where: { id: { in: ids } } });
   }
 }

@@ -1,4 +1,16 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Res, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  Res,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import type { Request as ExpressRequest, Response } from 'express';
 import { IsArray, IsEnum, IsOptional, IsString } from 'class-validator';
 import { UserRole } from '@prisma/client';
@@ -117,7 +129,11 @@ export class AuthController {
     @Param('id') targetId: string,
     @Body() dto: UpdatePermissionsDto,
   ) {
-    return this.authService.updatePermissions(req.user.id, targetId, dto.pagePermissions);
+    return this.authService.updatePermissions(
+      req.user.id,
+      targetId,
+      dto.pagePermissions,
+    );
   }
 
   // ── Promozione ruolo (solo SUPERADMIN) ────────────────────────────────────
@@ -129,6 +145,11 @@ export class AuthController {
     @Param('id') targetId: string,
     @Body() dto: PromoteRoleDto,
   ) {
-    return this.authService.promoteRole(req.user.id, targetId, dto.role, dto.boardRoles ?? []);
+    return this.authService.promoteRole(
+      req.user.id,
+      targetId,
+      dto.role,
+      dto.boardRoles ?? [],
+    );
   }
 }

@@ -16,6 +16,7 @@ import { SiteSettingsModule } from './site-settings/site-settings.module';
 import { StripeModule } from './stripe/stripe.module';
 import { FinanceModule } from './finance/finance.module';
 import { RsvpModule } from './rsvp/rsvp.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RsvpModule } from './rsvp/rsvp.module';
     StripeModule,
     FinanceModule,
     RsvpModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

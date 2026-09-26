@@ -17,7 +17,8 @@ import { UpdateMyMemberDto } from './dto/update-my-member.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
 const REFRESH_COOKIE = 'acr_refresh';
-const REFRESH_SECRET = () => process.env.JWT_REFRESH_SECRET ?? 'changeme-refresh';
+const REFRESH_SECRET = () =>
+  process.env.JWT_REFRESH_SECRET ?? 'changeme-refresh';
 const IS_PROD = process.env.NODE_ENV === 'production';
 
 function refreshCookieOptions() {
@@ -51,7 +52,11 @@ export class AuthService {
 
   async login(dto: LoginDto, res: Response) {
     const member = await this.prisma.member.findFirst({
-      where: { email: dto.email, deletedAt: null, status: { not: 'rifiutato' } },
+      where: {
+        email: dto.email,
+        deletedAt: null,
+        status: { not: 'rifiutato' },
+      },
     });
     if (!member || !member.passwordHash)
       throw new UnauthorizedException('Credenziali non valide');
@@ -59,15 +64,22 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.password, member.passwordHash);
     if (!valid) throw new UnauthorizedException('Credenziali non valide');
 
-    res.cookie(REFRESH_COOKIE, this.signRefresh(member), refreshCookieOptions());
+    res.cookie(
+      REFRESH_COOKIE,
+      this.signRefresh(member),
+      refreshCookieOptions(),
+    );
     return { access_token: this.sign(member), user: this.toPublic(member) };
   }
 
   async refresh(refreshToken: string | undefined) {
-    if (!refreshToken) throw new UnauthorizedException('Refresh token mancante');
+    if (!refreshToken)
+      throw new UnauthorizedException('Refresh token mancante');
     let payload: { sub: string; email: string; role: UserRole };
     try {
-      payload = this.jwtService.verify(refreshToken, { secret: REFRESH_SECRET() });
+      payload = this.jwtService.verify(refreshToken, {
+        secret: REFRESH_SECRET(),
+      });
     } catch {
       throw new UnauthorizedException('Refresh token non valido o scaduto');
     }
@@ -82,7 +94,7 @@ export class AuthService {
     res.clearCookie(REFRESH_COOKIE, {
       httpOnly: true,
       secure: IS_PROD,
-      sameSite: IS_PROD ? 'none' : 'lax',
+      sameSite: (IS_PROD ? 'none' : 'lax') as 'none' | 'lax',
       path: '/',
     });
   }
@@ -97,14 +109,22 @@ export class AuthService {
   }
 
   async updateProfile(id: string, dto: UpdateProfileDto) {
-    const member = await this.prisma.member.findUnique({ where: { id, deletedAt: null } });
+    const member = await this.prisma.member.findUnique({
+      where: { id, deletedAt: null },
+    });
     if (!member) throw new NotFoundException('Utente non trovato');
 
     if (dto.password) {
       if (!dto.currentPassword)
-        throw new BadRequestException('Inserisci la password attuale per cambiarla');
-      const valid = await bcrypt.compare(dto.currentPassword, member.passwordHash ?? '');
-      if (!valid) throw new UnauthorizedException('Password attuale non corretta');
+        throw new BadRequestException(
+          'Inserisci la password attuale per cambiarla',
+        );
+      const valid = await bcrypt.compare(
+        dto.currentPassword,
+        member.passwordHash ?? '',
+      );
+      if (!valid)
+        throw new UnauthorizedException('Password attuale non corretta');
     }
 
     if (dto.email && dto.email !== member.email) {
@@ -115,18 +135,28 @@ export class AuthService {
     }
 
     const data: Record<string, unknown> = {};
-    if (dto.email)    data['email']        = dto.email;
-    if (dto.password) data['passwordHash'] = await bcrypt.hash(dto.password, 10);
+    if (dto.email) data['email'] = dto.email;
+    if (dto.password)
+      data['passwordHash'] = await bcrypt.hash(dto.password, 10);
 
-    const updated = await this.prisma.member.update({ where: { id }, data, select: PUBLIC_SELECT });
-    return { access_token: this.sign(updated as any), user: updated };
+    const updated = await this.prisma.member.update({
+      where: { id },
+      data,
+      select: PUBLIC_SELECT,
+    });
+    return { access_token: this.sign(updated), user: updated };
   }
 
   async deleteProfile(id: string, currentPassword: string) {
-    const member = await this.prisma.member.findUnique({ where: { id, deletedAt: null } });
+    const member = await this.prisma.member.findUnique({
+      where: { id, deletedAt: null },
+    });
     if (!member) throw new NotFoundException('Utente non trovato');
 
-    const valid = await bcrypt.compare(currentPassword, member.passwordHash ?? '');
+    const valid = await bcrypt.compare(
+      currentPassword,
+      member.passwordHash ?? '',
+    );
     if (!valid) throw new UnauthorizedException('Password non corretta');
 
     if (member.role === UserRole.SUPERADMIN) {
@@ -134,10 +164,13 @@ export class AuthService {
         where: { role: UserRole.SUPERADMIN, deletedAt: null },
       });
       if (count <= 1)
-        throw new ForbiddenException('Non puoi eliminare l\'unico Presidente');
+        throw new ForbiddenException("Non puoi eliminare l'unico Presidente");
     }
 
-    await this.prisma.member.update({ where: { id }, data: { deletedAt: new Date() } });
+    await this.prisma.member.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 
   // ── Profilo anagrafico (area personale) ─────────────────────────────────
@@ -151,14 +184,16 @@ export class AuthService {
     const { passwordHash: _, fiscalCodeHash: __, ...rest } = member as any;
     const decrypted = this.enc.decryptMember(rest);
     if (decrypted.guardian) {
-      const { fiscalCodeHash: _gh, ...gRest } = decrypted.guardian as any;
+      const { fiscalCodeHash: _gh, ...gRest } = decrypted.guardian;
       decrypted.guardian = this.enc.decryptGuardian(gRest);
     }
     return decrypted;
   }
 
   async updateMyMember(id: string, dto: UpdateMyMemberDto) {
-    const member = await this.prisma.member.findUnique({ where: { id, deletedAt: null } });
+    const member = await this.prisma.member.findUnique({
+      where: { id, deletedAt: null },
+    });
     if (!member) throw new NotFoundException();
 
     const raw: Record<string, unknown> = { ...dto };
@@ -181,7 +216,7 @@ export class AuthService {
     const { passwordHash: _, fiscalCodeHash: __, ...rest } = updated as any;
     const decrypted = this.enc.decryptMember(rest);
     if (decrypted.guardian) {
-      const { fiscalCodeHash: _gh, ...gRest } = decrypted.guardian as any;
+      const { fiscalCodeHash: _gh, ...gRest } = decrypted.guardian;
       decrypted.guardian = this.enc.decryptGuardian(gRest);
     }
     return decrypted;
@@ -189,8 +224,15 @@ export class AuthService {
 
   // ── Promozione ruolo (solo SUPERADMIN) ───────────────────────────────────
 
-  async promoteRole(requestingId: string, targetId: string, role: UserRole, boardRoles: string[]) {
-    const requester = await this.prisma.member.findUnique({ where: { id: requestingId } });
+  async promoteRole(
+    requestingId: string,
+    targetId: string,
+    role: UserRole,
+    boardRoles: string[],
+  ) {
+    const requester = await this.prisma.member.findUnique({
+      where: { id: requestingId },
+    });
     if (!requester || requester.role !== UserRole.SUPERADMIN)
       throw new ForbiddenException('Solo il presidente può modificare i ruoli');
 
@@ -207,7 +249,7 @@ export class AuthService {
         where: { role: UserRole.SUPERADMIN, deletedAt: null },
       });
       if (count <= 1)
-        throw new ForbiddenException('Non puoi retrocedere l\'unico Presidente');
+        throw new ForbiddenException("Non puoi retrocedere l'unico Presidente");
     }
 
     return this.prisma.member.update({
@@ -223,15 +265,27 @@ export class AuthService {
 
   // ── Permessi pagine (solo SUPERADMIN) ───────────────────────────────────
 
-  async updatePermissions(requestingId: string, targetId: string, pagePermissions: Record<string, boolean>) {
-    const requester = await this.prisma.member.findUnique({ where: { id: requestingId } });
+  async updatePermissions(
+    requestingId: string,
+    targetId: string,
+    pagePermissions: Record<string, boolean>,
+  ) {
+    const requester = await this.prisma.member.findUnique({
+      where: { id: requestingId },
+    });
     if (!requester || requester.role !== UserRole.SUPERADMIN)
-      throw new ForbiddenException('Solo il presidente può modificare i permessi');
+      throw new ForbiddenException(
+        'Solo il presidente può modificare i permessi',
+      );
 
-    const target = await this.prisma.member.findUnique({ where: { id: targetId, deletedAt: null } });
+    const target = await this.prisma.member.findUnique({
+      where: { id: targetId, deletedAt: null },
+    });
     if (!target) throw new NotFoundException('Membro non trovato');
     if (target.role === UserRole.SUPERADMIN)
-      throw new ForbiddenException('Non puoi modificare i permessi di un altro Presidente');
+      throw new ForbiddenException(
+        'Non puoi modificare i permessi di un altro Presidente',
+      );
 
     return this.prisma.member.update({
       where: { id: targetId },
@@ -256,25 +310,27 @@ export class AuthService {
     });
     if (!member) throw new NotFoundException('Tessera non trovata');
 
-    const year     = member.membershipYear ?? new Date().getFullYear();
-    const expiry   = new Date(`${year}-12-31`);
-    const now      = new Date();
-    const expired  = now > expiry;
-    const daysLeft = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const year = member.membershipYear ?? new Date().getFullYear();
+    const expiry = new Date(`${year}-12-31`);
+    const now = new Date();
+    const expired = now > expiry;
+    const daysLeft = Math.ceil(
+      (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
     return {
-      id:             member.id,
-      firstName:      member.firstName,
-      lastName:       member.lastName,
-      category:       member.category,
-      status:         member.status,
+      id: member.id,
+      firstName: member.firstName,
+      lastName: member.lastName,
+      category: member.category,
+      status: member.status,
       membershipYear: year,
-      expiryDate:     expiry.toISOString(),
+      expiryDate: expiry.toISOString(),
       expired,
-      daysLeft:       expired ? 0 : daysLeft,
-      paymentMethod:  member.paymentMethod,
-      profileImage:   member.profileImage,
-      cardCode:       `ACR · ${year} · ${member.id.slice(-4).toUpperCase()}`,
+      daysLeft: expired ? 0 : daysLeft,
+      paymentMethod: member.paymentMethod,
+      profileImage: member.profileImage,
+      cardCode: `ACR · ${year} · ${member.id.slice(-4).toUpperCase()}`,
     };
   }
 
@@ -295,7 +351,9 @@ export class AuthService {
     });
     if (!member) throw new NotFoundException('Email non trovata');
     if (member.passwordHash)
-      throw new BadRequestException('Password già impostata, utilizza il login');
+      throw new BadRequestException(
+        'Password già impostata, utilizza il login',
+      );
 
     const hash = await bcrypt.hash(password, 10);
     const updated = await this.prisma.member.update({
@@ -306,7 +364,11 @@ export class AuthService {
   }
 
   private sign(member: { id: string; email: string; role: UserRole }) {
-    return this.jwtService.sign({ sub: member.id, email: member.email, role: member.role });
+    return this.jwtService.sign({
+      sub: member.id,
+      email: member.email,
+      role: member.role,
+    });
   }
 
   private signRefresh(member: { id: string; email: string; role: UserRole }) {
@@ -317,8 +379,13 @@ export class AuthService {
   }
 
   private toPublic(member: {
-    id: string; email: string; firstName: string; lastName: string;
-    role: UserRole; profileImage?: string | null; boardRoles: string[];
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: UserRole;
+    profileImage?: string | null;
+    boardRoles: string[];
     pagePermissions?: unknown;
   }) {
     return {

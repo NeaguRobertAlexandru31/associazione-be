@@ -7,6 +7,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -14,17 +15,19 @@ import { randomBytes } from 'crypto';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const sharp = require('sharp') as typeof import('sharp');
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { S3Service } from '../s3/s3.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 const imageFilter = (_req: any, file: Express.Multer.File, cb: any) => {
-  /image\/(jpeg|png|webp|gif)/.test(file.mimetype) ? cb(null, true) : cb(null, false);
+  /image\/(jpeg|png|webp|gif)/.test(file.mimetype)
+    ? cb(null, true)
+    : cb(null, false);
 };
 
 const memStorage = memoryStorage();
 
 @Controller('uploads')
-@UseGuards(AdminGuard)
 export class UploadsController {
   constructor(
     private readonly r2: S3Service,
@@ -36,7 +39,7 @@ export class UploadsController {
     folder: string,
   ): Promise<string[]> {
     return Promise.all(
-      (files ?? []).map(async file => {
+      (files ?? []).map(async (file) => {
         const webpBuffer = await sharp(file.buffer)
           .resize({ width: 1920, withoutEnlargement: true })
           .webp({ quality: 80 })
@@ -49,11 +52,12 @@ export class UploadsController {
   }
 
   @Post('events')
+  @UseGuards(AdminGuard)
   @UseInterceptors(
     FilesInterceptor('files', 10, {
-      storage:    memStorage,
+      storage: memStorage,
       fileFilter: imageFilter,
-      limits:     { fileSize: 15 * 1024 * 1024 },
+      limits: { fileSize: 15 * 1024 * 1024 },
     }),
   )
   async uploadEvents(@UploadedFiles() files: Express.Multer.File[]) {
@@ -62,11 +66,12 @@ export class UploadsController {
   }
 
   @Post('articles')
+  @UseGuards(AdminGuard)
   @UseInterceptors(
     FilesInterceptor('files', 10, {
-      storage:    memStorage,
+      storage: memStorage,
       fileFilter: imageFilter,
-      limits:     { fileSize: 15 * 1024 * 1024 },
+      limits: { fileSize: 15 * 1024 * 1024 },
     }),
   )
   async uploadArticles(@UploadedFiles() files: Express.Multer.File[]) {
@@ -75,11 +80,12 @@ export class UploadsController {
   }
 
   @Post('projects')
+  @UseGuards(AdminGuard)
   @UseInterceptors(
     FilesInterceptor('files', 10, {
-      storage:    memStorage,
+      storage: memStorage,
       fileFilter: imageFilter,
-      limits:     { fileSize: 15 * 1024 * 1024 },
+      limits: { fileSize: 15 * 1024 * 1024 },
     }),
   )
   async uploadProjects(@UploadedFiles() files: Express.Multer.File[]) {
@@ -88,11 +94,12 @@ export class UploadsController {
   }
 
   @Post('settings')
+  @UseGuards(AdminGuard)
   @UseInterceptors(
     FilesInterceptor('files', 1, {
-      storage:    memStorage,
+      storage: memStorage,
       fileFilter: imageFilter,
-      limits:     { fileSize: 15 * 1024 * 1024 },
+      limits: { fileSize: 15 * 1024 * 1024 },
     }),
   )
   async uploadSettings(@UploadedFiles() files: Express.Multer.File[]) {
@@ -101,11 +108,12 @@ export class UploadsController {
   }
 
   @Post('placeholders')
+  @UseGuards(AdminGuard)
   @UseInterceptors(
     FilesInterceptor('files', 1, {
-      storage:    memStorage,
+      storage: memStorage,
       fileFilter: imageFilter,
-      limits:     { fileSize: 15 * 1024 * 1024 },
+      limits: { fileSize: 15 * 1024 * 1024 },
     }),
   )
   async uploadPlaceholders(@UploadedFiles() files: Express.Multer.File[]) {
@@ -114,11 +122,12 @@ export class UploadsController {
   }
 
   @Post('avatar')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', {
-      storage:    memStorage,
+      storage: memStorage,
       fileFilter: imageFilter,
-      limits:     { fileSize: 15 * 1024 * 1024 },
+      limits: { fileSize: 15 * 1024 * 1024 },
     }),
   )
   async uploadAvatar(
@@ -139,5 +148,20 @@ export class UploadsController {
     });
 
     return { url };
+  }
+
+  @Post('documents')
+  @UseGuards(AdminGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memStorage,
+      limits: { fileSize: 50 * 1024 * 1024 },
+    }),
+  )
+  async uploadDocument(@UploadedFile() file: Express.Multer.File) {
+    const ext = file.originalname.split('.').pop() ?? 'bin';
+    const key = `documents/${randomBytes(10).toString('hex')}.${ext}`;
+    const url = await this.r2.upload(key, file.buffer, file.mimetype);
+    return { url, fileName: file.originalname, fileSize: file.size };
   }
 }

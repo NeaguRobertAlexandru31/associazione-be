@@ -9,7 +9,9 @@ import { AppModule } from './app.module';
 import { EventsService } from './events/events.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true,
+  });
 
   app.use(cookieParser());
   app.use((req: any, res: any, next: any) => {

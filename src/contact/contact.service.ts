@@ -37,16 +37,25 @@ export class ContactService {
     });
   }
 
-  async reply(id: string, adminName: string, adminEmail: string, message: string) {
-    const contact = await this.prisma.contactMessage.findUnique({ where: { id } });
+  async reply(
+    id: string,
+    adminName: string,
+    adminEmail: string,
+    message: string,
+  ) {
+    const contact = await this.prisma.contactMessage.findUnique({
+      where: { id },
+    });
     if (!contact) throw new NotFoundException('Messaggio non trovato');
 
     await this.mail.sendReply({
-      fromName:  adminName,
+      fromName: adminName,
       fromEmail: adminEmail,
-      toEmail:   contact.email,
-      toName:    contact.name,
-      subject:   contact.subject ? `Re: ${contact.subject}` : 'Risposta al tuo messaggio',
+      toEmail: contact.email,
+      toName: contact.name,
+      subject: contact.subject
+        ? `Re: ${contact.subject}`
+        : 'Risposta al tuo messaggio',
       message,
     });
   }

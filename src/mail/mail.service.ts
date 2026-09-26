@@ -4,7 +4,9 @@ import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 @Injectable()
 export class MailService {
   private get client() {
-    return new SESClient({ region: process.env.AWS_REGION_NAME ?? 'eu-central-1' });
+    return new SESClient({
+      region: process.env.AWS_REGION_NAME ?? 'eu-central-1',
+    });
   }
 
   private get from() {
@@ -69,16 +71,16 @@ export class MailService {
 
   async sendWelcome(opts: {
     firstName: string;
-    lastName:  string;
-    email:     string;
-    category:  string;
-    year:      number;
+    lastName: string;
+    email: string;
+    category: string;
+    year: number;
   }): Promise<void> {
     const loginUrl = `${this.appUrl}/login`;
 
     const categoryLabel: Record<string, string> = {
-      ordinario:   'Ordinario',
-      under26:     'Under 26',
+      ordinario: 'Ordinario',
+      under26: 'Under 26',
       sostenitore: 'Sostenitore',
     };
 
@@ -133,31 +135,38 @@ export class MailService {
 
     const text = `Benvenuto/a ${opts.firstName}!\n\nLa tua iscrizione all'ACR per l'anno ${opts.year} è confermata.\n\nCome accedere:\n1. Vai su ${loginUrl}\n2. Inserisci la tua email: ${opts.email}\n3. Clicca "Continua" e imposta la tua password\n\nPer assistenza: ${this.from}`;
 
-    await this.client.send(new SendEmailCommand({
-      Source:      `Associazione Culturale Rumena <${this.from}>`,
-      Destination: { ToAddresses: [`${opts.firstName} ${opts.lastName} <${opts.email}>`] },
-      Message: {
-        Subject: { Data: `Benvenuto/a nell'ACR — Tessera ${opts.year}`, Charset: 'UTF-8' },
-        Body: {
-          Text: { Data: text, Charset: 'UTF-8' },
-          Html: { Data: html,  Charset: 'UTF-8' },
+    await this.client.send(
+      new SendEmailCommand({
+        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Destination: {
+          ToAddresses: [`${opts.firstName} ${opts.lastName} <${opts.email}>`],
         },
-      },
-    }));
+        Message: {
+          Subject: {
+            Data: `Benvenuto/a nell'ACR — Tessera ${opts.year}`,
+            Charset: 'UTF-8',
+          },
+          Body: {
+            Text: { Data: text, Charset: 'UTF-8' },
+            Html: { Data: html, Charset: 'UTF-8' },
+          },
+        },
+      }),
+    );
   }
 
   async sendApproved(opts: {
     firstName: string;
-    lastName:  string;
-    email:     string;
-    category:  string;
-    year:      number;
+    lastName: string;
+    email: string;
+    category: string;
+    year: number;
   }): Promise<void> {
     const loginUrl = `${this.appUrl}/login`;
 
     const categoryLabel: Record<string, string> = {
-      ordinario:   'Ordinario',
-      under26:     'Under 26',
+      ordinario: 'Ordinario',
+      under26: 'Under 26',
       sostenitore: 'Sostenitore',
     };
 
@@ -196,25 +205,32 @@ export class MailService {
 
     const text = `La tua iscrizione all'ACR per l'anno ${opts.year} è stata approvata!\n\nAccedi alla tua area personale: ${loginUrl}\n\nPer assistenza: ${this.from}`;
 
-    await this.client.send(new SendEmailCommand({
-      Source:      `Associazione Culturale Rumena <${this.from}>`,
-      Destination: { ToAddresses: [`${opts.firstName} ${opts.lastName} <${opts.email}>`] },
-      Message: {
-        Subject: { Data: `Iscrizione approvata — ACR ${opts.year}`, Charset: 'UTF-8' },
-        Body: {
-          Text: { Data: text, Charset: 'UTF-8' },
-          Html: { Data: html,  Charset: 'UTF-8' },
+    await this.client.send(
+      new SendEmailCommand({
+        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Destination: {
+          ToAddresses: [`${opts.firstName} ${opts.lastName} <${opts.email}>`],
         },
-      },
-    }));
+        Message: {
+          Subject: {
+            Data: `Iscrizione approvata — ACR ${opts.year}`,
+            Charset: 'UTF-8',
+          },
+          Body: {
+            Text: { Data: text, Charset: 'UTF-8' },
+            Html: { Data: html, Charset: 'UTF-8' },
+          },
+        },
+      }),
+    );
   }
 
   async sendRejected(opts: {
     firstName: string;
-    lastName:  string;
-    email:     string;
-    year:      number;
-    reason?:   string;
+    lastName: string;
+    email: string;
+    year: number;
+    reason?: string;
   }): Promise<void> {
     const html = this.layout(`
       <h1 style="color:#002068;font-size:22px;font-weight:700;margin:0 0 8px;">
@@ -224,7 +240,9 @@ export class MailService {
         Ci dispiace informarti che la tua richiesta di iscrizione all'Associazione Culturale Rumena per l'anno <strong>${opts.year}</strong> non è stata accettata.
       </p>
 
-      ${opts.reason ? `
+      ${
+        opts.reason
+          ? `
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3fc;border-radius:12px;padding:20px;margin-bottom:28px;">
         <tr>
           <td>
@@ -233,7 +251,9 @@ export class MailService {
           </td>
         </tr>
       </table>
-      ` : ''}
+      `
+          : ''
+      }
 
       <p style="color:#444653;font-size:14px;margin:0 0 24px;line-height:1.6;">
         Per ulteriori informazioni o chiarimenti, contattaci rispondendo a questa email.
@@ -242,27 +262,38 @@ export class MailService {
 
     const text = `Gentile ${opts.firstName},\n\nLa tua richiesta di iscrizione all'ACR per l'anno ${opts.year} non è stata accettata.${opts.reason ? `\n\nMotivazione: ${opts.reason}` : ''}\n\nPer chiarimenti scrivi a: ${this.from}`;
 
-    await this.client.send(new SendEmailCommand({
-      Source:      `Associazione Culturale Rumena <${this.from}>`,
-      Destination: { ToAddresses: [`${opts.firstName} ${opts.lastName} <${opts.email}>`] },
-      Message: {
-        Subject: { Data: `Esito iscrizione ACR ${opts.year}`, Charset: 'UTF-8' },
-        Body: {
-          Text: { Data: text, Charset: 'UTF-8' },
-          Html: { Data: html,  Charset: 'UTF-8' },
+    await this.client.send(
+      new SendEmailCommand({
+        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Destination: {
+          ToAddresses: [`${opts.firstName} ${opts.lastName} <${opts.email}>`],
         },
-      },
-    }));
+        Message: {
+          Subject: {
+            Data: `Esito iscrizione ACR ${opts.year}`,
+            Charset: 'UTF-8',
+          },
+          Body: {
+            Text: { Data: text, Charset: 'UTF-8' },
+            Html: { Data: html, Charset: 'UTF-8' },
+          },
+        },
+      }),
+    );
   }
 
   async sendDonationReceipt(opts: {
-    email:     string;
-    name:      string;
-    amount:    number;
+    email: string;
+    name: string;
+    amount: number;
     frequency: string;
   }): Promise<void> {
-    const frequencyLabel = opts.frequency === 'monthly' ? 'mensile' : 'una tantum';
-    const amountFmt = opts.amount.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+    const frequencyLabel =
+      opts.frequency === 'monthly' ? 'mensile' : 'una tantum';
+    const amountFmt = opts.amount.toLocaleString('it-IT', {
+      style: 'currency',
+      currency: 'EUR',
+    });
 
     const html = this.layout(`
       <h1 style="color:#002068;font-size:22px;font-weight:700;margin:0 0 8px;">
@@ -290,37 +321,42 @@ export class MailService {
 
     const text = `Grazie per la tua donazione di ${amountFmt} (${frequencyLabel}) all'ACR.\n\nConserva questa email come ricevuta.\n\nPer assistenza: ${this.from}`;
 
-    await this.client.send(new SendEmailCommand({
-      Source:      `Associazione Culturale Rumena <${this.from}>`,
-      Destination: { ToAddresses: [`${opts.name} <${opts.email}>`] },
-      Message: {
-        Subject: { Data: `Ricevuta donazione — ${amountFmt}`, Charset: 'UTF-8' },
-        Body: {
-          Text: { Data: text, Charset: 'UTF-8' },
-          Html: { Data: html,  Charset: 'UTF-8' },
+    await this.client.send(
+      new SendEmailCommand({
+        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Destination: { ToAddresses: [`${opts.name} <${opts.email}>`] },
+        Message: {
+          Subject: {
+            Data: `Ricevuta donazione — ${amountFmt}`,
+            Charset: 'UTF-8',
+          },
+          Body: {
+            Text: { Data: text, Charset: 'UTF-8' },
+            Html: { Data: html, Charset: 'UTF-8' },
+          },
         },
-      },
-    }));
+      }),
+    );
   }
 
   async sendNewRegistrationAlert(opts: {
-    firstName:     string;
-    lastName:      string;
-    email:         string;
-    category:      string;
-    year:          number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    category: string;
+    year: number;
     paymentMethod: string;
-    adminEmail:    string;
+    adminEmail: string;
   }): Promise<void> {
     const categoryLabel: Record<string, string> = {
-      ordinario:   'Ordinario',
-      under26:     'Under 26',
+      ordinario: 'Ordinario',
+      under26: 'Under 26',
       sostenitore: 'Sostenitore',
     };
 
     const paymentLabel: Record<string, string> = {
       contanti: 'Contanti (in sede)',
-      online:   'Online (carta/bonifico)',
+      online: 'Online (carta/bonifico)',
     };
 
     const membersUrl = `${this.appUrl}/admin/members`;
@@ -358,45 +394,55 @@ export class MailService {
 
     const text = `Nuova richiesta di iscrizione ACR ${opts.year}\n\nSocio: ${opts.firstName} ${opts.lastName}\nEmail: ${opts.email}\nCategoria: ${categoryLabel[opts.category] ?? opts.category}\nPagamento: ${paymentLabel[opts.paymentMethod] ?? opts.paymentMethod}\n\nGestisci: ${membersUrl}`;
 
-    await this.client.send(new SendEmailCommand({
-      Source:      `Associazione Culturale Rumena <${this.from}>`,
-      Destination: { ToAddresses: [opts.adminEmail] },
-      Message: {
-        Subject: { Data: `Nuova iscrizione — ${opts.firstName} ${opts.lastName}`, Charset: 'UTF-8' },
-        Body: {
-          Text: { Data: text, Charset: 'UTF-8' },
-          Html: { Data: html,  Charset: 'UTF-8' },
+    await this.client.send(
+      new SendEmailCommand({
+        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Destination: { ToAddresses: [opts.adminEmail] },
+        Message: {
+          Subject: {
+            Data: `Nuova iscrizione — ${opts.firstName} ${opts.lastName}`,
+            Charset: 'UTF-8',
+          },
+          Body: {
+            Text: { Data: text, Charset: 'UTF-8' },
+            Html: { Data: html, Charset: 'UTF-8' },
+          },
         },
-      },
-    }));
+      }),
+    );
   }
 
   async sendReply(opts: {
-    fromName:  string;
+    fromName: string;
     fromEmail: string;
-    toEmail:   string;
-    toName:    string;
-    subject:   string;
-    message:   string;
+    toEmail: string;
+    toName: string;
+    subject: string;
+    message: string;
   }): Promise<void> {
     const escaped = opts.message
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    await this.client.send(new SendEmailCommand({
-      Source:           `${opts.fromName} <${process.env.MAIL_FROM}>`,
-      ReplyToAddresses: [opts.fromEmail],
-      Destination: {
-        ToAddresses: [`${opts.toName} <${opts.toEmail}>`],
-      },
-      Message: {
-        Subject: { Data: opts.subject, Charset: 'UTF-8' },
-        Body: {
-          Text: { Data: opts.message,  Charset: 'UTF-8' },
-          Html: { Data: `<p style="white-space:pre-wrap">${escaped}</p>`, Charset: 'UTF-8' },
+    await this.client.send(
+      new SendEmailCommand({
+        Source: `${opts.fromName} <${process.env.MAIL_FROM}>`,
+        ReplyToAddresses: [opts.fromEmail],
+        Destination: {
+          ToAddresses: [`${opts.toName} <${opts.toEmail}>`],
         },
-      },
-    }));
+        Message: {
+          Subject: { Data: opts.subject, Charset: 'UTF-8' },
+          Body: {
+            Text: { Data: opts.message, Charset: 'UTF-8' },
+            Html: {
+              Data: `<p style="white-space:pre-wrap">${escaped}</p>`,
+              Charset: 'UTF-8',
+            },
+          },
+        },
+      }),
+    );
   }
 }
