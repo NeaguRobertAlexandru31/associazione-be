@@ -13,6 +13,9 @@ import { ContactModule } from './contact/contact.module';
 import { ArticlesModule } from './articles/articles.module';
 import { ProjectsModule } from './projects/projects.module';
 import { SiteSettingsModule } from './site-settings/site-settings.module';
+import { StripeModule } from './stripe/stripe.module';
+import { FinanceModule } from './finance/finance.module';
+import { RsvpModule } from './rsvp/rsvp.module';
 
 @Module({
   imports: [
@@ -28,6 +31,9 @@ import { SiteSettingsModule } from './site-settings/site-settings.module';
     ArticlesModule,
     ProjectsModule,
     SiteSettingsModule,
+    StripeModule,
+    FinanceModule,
+    RsvpModule,
   ],
   controllers: [AppController],
   providers: [AppService],

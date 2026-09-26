@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../encryption/encryption.service';
+import { MailService } from '../mail/mail.service';
+import { StripeService } from '../stripe/stripe.service';
 import { CreateRegistrationDto, MemberCategory, PaymentMethod } from './dto/create-registration.dto';
 
 @Injectable()
@@ -13,6 +15,8 @@ export class RegistrationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly enc: EncryptionService,
+    private readonly mail: MailService,
+    private readonly stripe: StripeService,
   ) {}
 
   async create(dto: CreateRegistrationDto) {
@@ -46,7 +50,7 @@ export class RegistrationsService {
 
     const fiscalCodeHash = this.enc.hmac(dto.fiscalCode);
     const duplicate = await this.prisma.member.findFirst({
-      where: { fiscalCodeHash, membershipYear, status: { not: 'rifiutato' } },
+      where: { fiscalCodeHash, membershipYear, status: { not: 'rifiutato' }, deletedAt: null },
     });
     if (duplicate) {
       throw new ConflictException(
@@ -104,6 +108,27 @@ export class RegistrationsService {
       include: { guardian: true },
     });
 
+    this.mail.sendWelcome({
+      firstName: dto.firstName,
+      lastName:  dto.lastName,
+      email:     dto.email,
+      category:  dto.category,
+      year:      membershipYear,
+    }).catch(() => {});
+
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminEmail) {
+      this.mail.sendNewRegistrationAlert({
+        firstName:     dto.firstName,
+        lastName:      dto.lastName,
+        email:         dto.email,
+        category:      dto.category,
+        year:          membershipYear,
+        paymentMethod: dto.paymentMethod,
+        adminEmail,
+      }).catch(() => {});
+    }
+
     const response: Record<string, unknown> = {
       id:             member.id,
       status:         member.status,
@@ -111,7 +136,14 @@ export class RegistrationsService {
     };
 
     if (dto.paymentMethod === PaymentMethod.online) {
-      response.payment_url = `https://pay.placeholder.com/checkout?ref=${member.id}`;
+      response.payment_url = await this.stripe.createCheckoutSession({
+        memberId:  member.id,
+        firstName: dto.firstName,
+        lastName:  dto.lastName,
+        email:     dto.email,
+        category:  dto.category,
+        year:      membershipYear,
+      });
     }
 
     return response;

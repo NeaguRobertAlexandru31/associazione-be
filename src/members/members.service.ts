@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../encryption/encryption.service';
+import { MailService } from '../mail/mail.service';
 import { UpdateSocioDto } from './dto/update-socio.dto';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class MembersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly enc: EncryptionService,
+    private readonly mail: MailService,
   ) {}
 
   async getAll() {
@@ -70,6 +72,25 @@ export class MembersService {
       data,
       include: { guardian: true },
     });
+
+    if (dto.status && dto.status !== member.status) {
+      if (dto.status === 'attivo') {
+        this.mail.sendApproved({
+          firstName: updated.firstName,
+          lastName:  updated.lastName,
+          email:     updated.email,
+          category:  updated.category,
+          year:      updated.membershipYear ?? new Date().getFullYear(),
+        }).catch(() => {});
+      } else if (dto.status === 'rifiutato') {
+        this.mail.sendRejected({
+          firstName: updated.firstName,
+          lastName:  updated.lastName,
+          email:     updated.email,
+          year:      updated.membershipYear ?? new Date().getFullYear(),
+        }).catch(() => {});
+      }
+    }
 
     const { passwordHash: _, fiscalCodeHash: __, ...rest } = updated as any;
     const decrypted = this.enc.decryptMember(rest);
