@@ -27,6 +27,8 @@ const EVENT_SELECT = {
   cover: true,
   uploadToken: true,
   uploadUrl: true,
+  hasCapacity: true,
+  capacity: true,
 } as const;
 
 @Injectable()
@@ -80,6 +82,8 @@ export class EventsService {
         description: dto.description,
         images: dto.images ?? [],
         cover: dto.cover,
+        hasCapacity: dto.hasCapacity ?? false,
+        capacity: dto.hasCapacity ? (dto.capacity ?? null) : null,
       },
       select: EVENT_SELECT,
     });

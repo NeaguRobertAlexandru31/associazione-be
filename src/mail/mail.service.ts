@@ -412,6 +412,188 @@ export class MailService {
     );
   }
 
+  async sendBookingConfirmation(opts: {
+    booking: { id: string; name: string; email: string; seats: number; cancelToken: string; createdAt: Date };
+    event: { name: string; date: Date | string; time: string; location: string };
+    qrUrl: string;
+  }): Promise<void> {
+    const { booking, event, qrUrl } = opts;
+    const dateStr = new Date(event.date).toLocaleDateString('it-IT', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+    const cancelUrl = `${this.appUrl}/bookings/cancel/${booking.cancelToken}`;
+    const gcalBase = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
+    const gcalDate = new Date(event.date).toISOString().replace(/-|:|\.\d{3}/g, '').slice(0, 8);
+    const gcalUrl = `${gcalBase}&text=${encodeURIComponent(event.name)}&dates=${gcalDate}/${gcalDate}&details=${encodeURIComponent(`Prenotazione: ${booking.name} — ${booking.seats} posto/i`)}&location=${encodeURIComponent(event.location)}`;
+
+    const html = this.layout(`
+      <!-- Biglietto stile Ticketone -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="border:2px solid #002068;border-radius:16px;overflow:hidden;margin-bottom:28px;">
+        <!-- Banda superiore -->
+        <tr>
+          <td style="background:#002068;padding:20px 28px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td>
+                  <p style="margin:0;color:rgba(255,255,255,0.7);font-size:11px;letter-spacing:2px;text-transform:uppercase;">Biglietto di prenotazione</p>
+                  <p style="margin:6px 0 0;color:#ffffff;font-size:20px;font-weight:700;line-height:1.3;">${event.name}</p>
+                </td>
+                <td align="right" style="vertical-align:top;">
+                  <div style="background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 14px;text-align:center;">
+                    <p style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">${booking.seats}</p>
+                    <p style="margin:2px 0 0;color:rgba(255,255,255,0.7);font-size:10px;letter-spacing:1px;">${booking.seats === 1 ? 'POSTO' : 'POSTI'}</p>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <!-- Separatore perforato -->
+        <tr>
+          <td style="padding:0 16px;background:#ffffff;">
+            <div style="border-top:2px dashed #e0e0e0;margin:0;"></div>
+          </td>
+        </tr>
+        <!-- Dettagli evento + QR -->
+        <tr>
+          <td style="padding:20px 28px;background:#ffffff;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="vertical-align:top;">
+                  <table cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding-bottom:12px;">
+                        <p style="margin:0;font-size:11px;color:#888;letter-spacing:1px;text-transform:uppercase;">Data</p>
+                        <p style="margin:4px 0 0;font-size:14px;font-weight:600;color:#002068;">${dateStr}</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding-bottom:12px;">
+                        <p style="margin:0;font-size:11px;color:#888;letter-spacing:1px;text-transform:uppercase;">Orario</p>
+                        <p style="margin:4px 0 0;font-size:14px;font-weight:600;color:#002068;">${event.time}</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="padding-bottom:12px;">
+                        <p style="margin:0;font-size:11px;color:#888;letter-spacing:1px;text-transform:uppercase;">Luogo</p>
+                        <p style="margin:4px 0 0;font-size:14px;font-weight:600;color:#002068;">${event.location}</p>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <p style="margin:0;font-size:11px;color:#888;letter-spacing:1px;text-transform:uppercase;">Intestatario</p>
+                        <p style="margin:4px 0 0;font-size:14px;font-weight:600;color:#002068;">${booking.name}</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td align="right" style="vertical-align:middle;padding-left:16px;">
+                  <img src="${qrUrl}" width="120" height="120" alt="QR prenotazione"
+                       style="display:block;border-radius:8px;border:1px solid #e0e0e0;" />
+                  <p style="margin:4px 0 0;font-size:9px;color:#aaa;text-align:center;letter-spacing:0.5px;">SCANNERIZZA</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <!-- Banda codice -->
+        <tr>
+          <td style="background:#f4f3fc;padding:14px 28px;border-top:2px dashed #e0e0e0;">
+            <p style="margin:0;font-size:10px;color:#888;letter-spacing:1px;text-transform:uppercase;">Codice prenotazione</p>
+            <p style="margin:4px 0 0;font-size:13px;font-weight:700;color:#002068;font-family:monospace;letter-spacing:2px;">${booking.id.toUpperCase().slice(0, 12)}</p>
+          </td>
+        </tr>
+      </table>
+
+      <!-- CTA Calendario -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+        <tr>
+          <td align="center">
+            <a href="${gcalUrl}" target="_blank" style="display:inline-block;background:#002068;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:12px;">
+              📅 Aggiungi a Google Calendar
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Link annullamento -->
+      <p style="text-align:center;font-size:12px;color:#888;margin:0;">
+        Hai cambiato programma?
+        <a href="${cancelUrl}" style="color:#002068;font-weight:600;">Annulla la prenotazione</a>
+      </p>
+    `);
+
+    const text = `Prenotazione confermata — ${event.name}\n\nNome: ${booking.name}\nData: ${dateStr} ore ${event.time}\nLuogo: ${event.location}\nPosti: ${booking.seats}\nCodice: ${booking.id.toUpperCase().slice(0, 12)}\n\nAggiungi al calendario: ${gcalUrl}\nAnnulla: ${cancelUrl}`;
+
+    await this.client.send(
+      new SendEmailCommand({
+        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Destination: { ToAddresses: [`${booking.name} <${booking.email}>`] },
+        Message: {
+          Subject: { Data: `Prenotazione confermata — ${event.name}`, Charset: 'UTF-8' },
+          Body: {
+            Text: { Data: text, Charset: 'UTF-8' },
+            Html: { Data: html, Charset: 'UTF-8' },
+          },
+        },
+      }),
+    );
+  }
+
+  async sendBookingWaitlist(opts: {
+    booking: { id: string; name: string; email: string; seats: number };
+    event: { name: string; date: Date | string; time: string; location: string };
+    position: number;
+  }): Promise<void> {
+    const { booking, event, position } = opts;
+    const dateStr = new Date(event.date).toLocaleDateString('it-IT', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+
+    const html = this.layout(`
+      <h1 style="color:#002068;font-size:22px;font-weight:700;margin:0 0 8px;">
+        Sei in lista d'attesa
+      </h1>
+      <p style="color:#444653;font-size:14px;margin:0 0 24px;line-height:1.6;">
+        L'evento <strong>${event.name}</strong> del <em>${dateStr}</em> è al completo.<br/>
+        Sei stato/a inserito/a in lista d'attesa.
+      </p>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3fc;border-radius:12px;padding:20px;margin-bottom:28px;">
+        <tr>
+          <td>
+            <p style="margin:0 0 6px;font-size:12px;color:#444653;letter-spacing:1px;">LA TUA POSIZIONE IN LISTA</p>
+            <p style="margin:0;font-size:36px;font-weight:700;color:#002068;">#${position}</p>
+            <p style="margin:8px 0 0;font-size:13px;color:#444653;">
+              ${booking.name} · ${booking.seats} ${booking.seats === 1 ? 'posto' : 'posti'}
+            </p>
+          </td>
+        </tr>
+      </table>
+
+      <p style="color:#444653;font-size:14px;margin:0;line-height:1.6;">
+        Se un posto si libera, ti contatteremo automaticamente a questo indirizzo email con una nuova conferma e il biglietto.<br/><br/>
+        Per qualsiasi informazione scrivi a <a href="mailto:${this.from}" style="color:#002068;">${this.from}</a>
+      </p>
+    `);
+
+    const text = `Lista d'attesa — ${event.name}\n\nSei in posizione #${position} nella lista d'attesa.\nTi avviseremo se si libera un posto.\n\nEvento: ${dateStr} ore ${event.time} — ${event.location}\nPosti richiesti: ${booking.seats}`;
+
+    await this.client.send(
+      new SendEmailCommand({
+        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Destination: { ToAddresses: [`${booking.name} <${booking.email}>`] },
+        Message: {
+          Subject: { Data: `Lista d'attesa — ${event.name}`, Charset: 'UTF-8' },
+          Body: {
+            Text: { Data: text, Charset: 'UTF-8' },
+            Html: { Data: html, Charset: 'UTF-8' },
+          },
+        },
+      }),
+    );
+  }
+
   async sendPhotoUploadAlert(opts: {
     uploaderName: string;
     uploaderEmail: string | null;

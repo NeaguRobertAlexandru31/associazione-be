@@ -1,9 +1,12 @@
 import {
   IsArray,
+  IsBoolean,
   IsDateString,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  Min,
 } from 'class-validator';
 
 export class CreateEventDto {
@@ -34,4 +37,13 @@ export class CreateEventDto {
   @IsString()
   @IsOptional()
   cover?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  hasCapacity?: boolean;
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  capacity?: number;
 }

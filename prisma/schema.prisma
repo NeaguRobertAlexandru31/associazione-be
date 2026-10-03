@@ -128,21 +128,44 @@ model Guardian {
 }
 
 model Event {
-  id          String       @id @default(uuid())
-  slug        String?      @unique
+  id           String       @id @default(uuid())
+  slug         String?      @unique
+  name         String
+  date         DateTime
+  time         String
+  location     String
+  description  String?
+  images       String[]
+  cover        String?
+  uploadToken  String?
+  uploadUrl    String?
+  hasCapacity  Boolean      @default(false)
+  capacity     Int?
+  rsvps        EventRsvp[]
+  photos       EventPhoto[]
+  bookings     Booking[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+enum BookingStatus {
+  confirmed
+  waitlist
+  cancelled
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  event       Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId     String
   name        String
-  date        DateTime
-  time        String
-  location    String
-  description String?
-  images      String[]
-  cover       String?
-  uploadToken String?
-  uploadUrl   String?
-  rsvps       EventRsvp[]
-  photos      EventPhoto[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  email       String
+  phone       String?
+  seats       Int
+  status      BookingStatus @default(confirmed)
+  position    Int?          // posizione in lista d'attesa
+  cancelToken String        @unique @default(cuid())
+  createdAt   DateTime      @default(now())
 }
 
 model EventPhoto {

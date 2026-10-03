@@ -18,6 +18,7 @@ import { FinanceModule } from './finance/finance.module';
 import { RsvpModule } from './rsvp/rsvp.module';
 import { DocumentsModule } from './documents/documents.module';
 import { EventPhotosModule } from './event-photos/event-photos.module';
+import { BookingsModule } from './bookings/bookings.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { EventPhotosModule } from './event-photos/event-photos.module';
     RsvpModule,
     DocumentsModule,
     EventPhotosModule,
+    BookingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
