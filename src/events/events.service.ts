@@ -25,6 +25,8 @@ const EVENT_SELECT = {
   description: true,
   images: true,
   cover: true,
+  uploadToken: true,
+  uploadUrl: true,
 } as const;
 
 @Injectable()

@@ -24,8 +24,18 @@ async function bootstrap() {
   app.use(require('express').urlencoded({ limit: '20mb', extended: true }));
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
+  const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:4200')
+    .split(',')
+    .map(o => o.trim());
+
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:4200',
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.some(o => origin === o || origin.startsWith('http://192.168.') || origin.startsWith('http://10.') || origin.startsWith('http://172.'))) {
+        cb(null, true);
+      } else {
+        cb(new Error(`Origin ${origin} not allowed`));
+      }
+    },
     credentials: true,
   });
   app.useGlobalPipes(

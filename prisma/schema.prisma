@@ -128,8 +128,8 @@ model Guardian {
 }
 
 model Event {
-  id          String      @id @default(uuid())
-  slug        String?     @unique
+  id          String       @id @default(uuid())
+  slug        String?      @unique
   name        String
   date        DateTime
   time        String
@@ -137,9 +137,25 @@ model Event {
   description String?
   images      String[]
   cover       String?
+  uploadToken String?
+  uploadUrl   String?
   rsvps       EventRsvp[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  photos      EventPhoto[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model EventPhoto {
+  id             String   @id @default(cuid())
+  event          Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId        String
+  url            String
+  approved       Boolean  @default(false)
+  tokenSub       String
+  uploaderName   String?
+  uploaderEmail  String?
+  isMember       Boolean  @default(false)
+  createdAt      DateTime @default(now())
 }
 
 model EventRsvp {

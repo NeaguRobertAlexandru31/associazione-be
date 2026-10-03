@@ -17,6 +17,7 @@ import { StripeModule } from './stripe/stripe.module';
 import { FinanceModule } from './finance/finance.module';
 import { RsvpModule } from './rsvp/rsvp.module';
 import { DocumentsModule } from './documents/documents.module';
+import { EventPhotosModule } from './event-photos/event-photos.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { DocumentsModule } from './documents/documents.module';
     FinanceModule,
     RsvpModule,
     DocumentsModule,
+    EventPhotosModule,
   ],
   controllers: [AppController],
   providers: [AppService],

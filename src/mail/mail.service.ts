@@ -412,6 +412,176 @@ export class MailService {
     );
   }
 
+  async sendPhotoUploadAlert(opts: {
+    uploaderName: string;
+    uploaderEmail: string | null;
+    isMember: boolean;
+    eventName: string;
+    eventDate: string;
+    uploaded: number;
+    dashboardUrl: string;
+  }): Promise<void> {
+    const dateStr = new Date(opts.eventDate).toLocaleDateString('it-IT', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) return;
+
+    const html = this.layout(`
+      <h1 style="color:#002068;font-size:22px;font-weight:700;margin:0 0 8px;">
+        Nuove foto caricate
+      </h1>
+      <p style="color:#444653;font-size:14px;margin:0 0 24px;line-height:1.6;">
+        Un partecipante ha appena caricato <strong>${opts.uploaded} ${opts.uploaded === 1 ? 'foto' : 'foto'}</strong>
+        per l'evento <strong>${opts.eventName}</strong> del <em>${dateStr}</em>.
+      </p>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3fc;border-radius:12px;padding:20px;margin-bottom:28px;">
+        <tr>
+          <td>
+            <p style="margin:0 0 6px;font-size:12px;color:#444653;letter-spacing:1px;">CHI HA CARICATO</p>
+            <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#002068;">${opts.uploaderName}</p>
+            ${opts.uploaderEmail ? `<p style="margin:0 0 6px;font-size:13px;color:#444653;">Email: <strong>${opts.uploaderEmail}</strong></p>` : '<p style="margin:0 0 6px;font-size:13px;color:#444653;">Email: <em>non fornita</em></p>'}
+            <p style="margin:0;font-size:13px;color:#444653;">
+              Socio verificato: <strong>${opts.isMember ? '✓ Sì' : '✗ No'}</strong>
+            </p>
+          </td>
+        </tr>
+      </table>
+
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <a href="${opts.dashboardUrl}" style="display:inline-block;background:#002068;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:12px;letter-spacing:0.5px;">
+              Vai alla dashboard eventi →
+            </a>
+          </td>
+        </tr>
+      </table>
+    `);
+
+    const text = `Nuove foto caricate\n\nChi: ${opts.uploaderName}${opts.uploaderEmail ? ` (${opts.uploaderEmail})` : ''}\nSocio: ${opts.isMember ? 'Sì' : 'No'}\nEvento: ${opts.eventName} — ${dateStr}\nFoto caricate: ${opts.uploaded}\n\nDashboard: ${opts.dashboardUrl}`;
+
+    await this.client.send(
+      new SendEmailCommand({
+        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Destination: { ToAddresses: [adminEmail] },
+        Message: {
+          Subject: {
+            Data: `📸 ${opts.uploaderName} ha caricato ${opts.uploaded} foto — ${opts.eventName}`,
+            Charset: 'UTF-8',
+          },
+          Body: {
+            Text: { Data: text, Charset: 'UTF-8' },
+            Html: { Data: html, Charset: 'UTF-8' },
+          },
+        },
+      }),
+    );
+  }
+
+  async sendPhotoThankYou(opts: {
+    name: string;
+    email: string;
+    eventName: string;
+    eventDate: string;
+    uploaded: number;
+    isMember: boolean;
+    donationUrl?: string;
+    membershipUrl?: string;
+  }): Promise<void> {
+    const dateStr = new Date(opts.eventDate).toLocaleDateString('it-IT', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+
+    const memberSection = opts.isMember ? `
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0f4ff;border-radius:12px;padding:20px;margin-bottom:24px;">
+        <tr>
+          <td>
+            <p style="margin:0;font-size:14px;color:#002068;font-weight:600;">✓ Socio verificato</p>
+            <p style="margin:6px 0 0;font-size:13px;color:#444653;line-height:1.6;">
+              Le tue foto compaiono con il badge <strong>Socio</strong> nella galleria dell'evento. Grazie per far parte della nostra comunità!
+            </p>
+          </td>
+        </tr>
+      </table>
+    ` : `
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3fc;border-radius:12px;padding:20px;margin-bottom:24px;">
+        <tr>
+          <td>
+            <p style="margin:0 0 6px;font-size:12px;color:#444653;letter-spacing:1px;">VUOI FAR PARTE DELLA NOSTRA COMUNITÀ?</p>
+            <p style="margin:0 0 12px;font-size:14px;color:#444653;line-height:1.6;">
+              Diventare socio dell'Associazione Culturale Rumena significa partecipare attivamente alla vita culturale, avere accesso a eventi riservati e supportare le nostre iniziative.
+            </p>
+            <p style="margin:0;font-size:13px;color:#444653;line-height:1.6;">
+              La quota annuale è a partire da <strong>€10</strong> per under 26 e <strong>€20</strong> per soci ordinari.
+            </p>
+          </td>
+        </tr>
+      </table>
+
+      ${opts.membershipUrl ? `
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+        <tr>
+          <td align="center">
+            <a href="${opts.membershipUrl}" style="display:inline-block;background:#002068;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:12px;letter-spacing:0.5px;">
+              Diventa socio →
+            </a>
+          </td>
+        </tr>
+      </table>
+      ` : ''}
+
+      ${opts.donationUrl ? `
+      <p style="text-align:center;font-size:13px;color:#444653;margin:0 0 4px;">Oppure, se preferisci, puoi semplicemente</p>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <a href="${opts.donationUrl}" style="display:inline-block;background:#f4f3fc;color:#002068;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:12px;border:1px solid #002068;">
+              Fai una donazione libera
+            </a>
+          </td>
+        </tr>
+      </table>
+      ` : ''}
+    `;
+
+    const html = this.layout(`
+      <h1 style="color:#002068;font-size:22px;font-weight:700;margin:0 0 8px;">
+        Grazie, ${opts.name}! 📸
+      </h1>
+      <p style="color:#444653;font-size:14px;margin:0 0 24px;line-height:1.6;">
+        Hai condiviso <strong>${opts.uploaded} ${opts.uploaded === 1 ? 'foto' : 'foto'}</strong> dall'evento
+        <strong>${opts.eventName}</strong> del <em>${dateStr}</em>.<br/>
+        Le tue immagini sono ora visibili nella galleria dell'evento. Grazie per aver immortalato questi momenti con noi!
+      </p>
+
+      ${memberSection}
+    `);
+
+    const text = opts.isMember
+      ? `Grazie ${opts.name}! Hai caricato ${opts.uploaded} foto dall'evento "${opts.eventName}" del ${dateStr}. Le tue foto sono visibili nella galleria con il badge Socio.`
+      : `Grazie ${opts.name}! Hai caricato ${opts.uploaded} foto dall'evento "${opts.eventName}" del ${dateStr}.\n\nVuoi diventare socio? ${opts.membershipUrl ?? ''}\nOppure fai una donazione: ${opts.donationUrl ?? ''}`;
+
+    await this.client.send(
+      new SendEmailCommand({
+        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Destination: { ToAddresses: [`${opts.name} <${opts.email}>`] },
+        Message: {
+          Subject: {
+            Data: `Grazie per le tue foto — ${opts.eventName}`,
+            Charset: 'UTF-8',
+          },
+          Body: {
+            Text: { Data: text, Charset: 'UTF-8' },
+            Html: { Data: html, Charset: 'UTF-8' },
+          },
+        },
+      }),
+    );
+  }
+
   async sendReply(opts: {
     fromName: string;
     fromEmail: string;

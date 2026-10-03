@@ -3,6 +3,7 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3';
 
 @Injectable()
@@ -36,6 +37,21 @@ export class S3Service {
       }),
     );
     return `${this.cdnUrl}/${key}`;
+  }
+
+  async download(urlOrKey: string): Promise<Buffer> {
+    const key = urlOrKey.startsWith('http')
+      ? urlOrKey.replace(`${this.cdnUrl}/`, '')
+      : urlOrKey;
+
+    const res = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of res.Body as AsyncIterable<Uint8Array>) {
+      chunks.push(chunk);
+    }
+    return Buffer.concat(chunks);
   }
 
   async delete(urlOrKey: string): Promise<void> {
