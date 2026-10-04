@@ -16,14 +16,22 @@ export class BookingsService {
     private readonly s3: S3Service,
   ) {}
 
-  private async uploadQr(bookingId: string): Promise<string> {
-    const buffer = await QRCode.toBuffer(bookingId, {
+  private async uploadQr(bookingId: string, seat?: number): Promise<string> {
+    const payload = seat != null ? `${bookingId}|${seat}` : bookingId;
+    const key = seat != null ? `booking-qr/${bookingId}-${seat}.png` : `booking-qr/${bookingId}.png`;
+    const buffer = await QRCode.toBuffer(payload, {
       type: 'png',
       width: 300,
       margin: 1,
       color: { dark: '#002068', light: '#ffffff' },
     });
-    return this.s3.upload(`booking-qr/${bookingId}.png`, buffer, 'image/png');
+    return this.s3.upload(key, buffer, 'image/png');
+  }
+
+  private async uploadQrAll(bookingId: string, seats: number): Promise<string[]> {
+    return Promise.all(
+      Array.from({ length: seats }, (_, i) => this.uploadQr(bookingId, i + 1)),
+    );
   }
 
   async book(slug: string, dto: { name: string; email: string; phone?: string; seats: number }) {
@@ -33,17 +41,25 @@ export class BookingsService {
 
     const event = await this.prisma.event.findUnique({
       where: { slug },
-      select: { id: true, name: true, date: true, time: true, location: true, hasCapacity: true, capacity: true },
+      select: { id: true, name: true, date: true, time: true, location: true, hasCapacity: true, capacity: true, accessType: true },
     });
     if (!event) throw new NotFoundException('Evento non trovato');
-    if (!event.hasCapacity) throw new BadRequestException('Questo evento non richiede prenotazione');
+    if (!event.hasCapacity && event.accessType !== 'members_only') throw new BadRequestException('Questo evento non richiede prenotazione');
+
+    if (event.accessType === 'members_only') {
+      const member = await this.prisma.member.findFirst({
+        where: { email: dto.email, status: 'attivo', deletedAt: null },
+        select: { id: true },
+      });
+      if (!member) throw new BadRequestException('Email non associata a un socio attivo');
+    }
 
     const confirmedSeats = await this.prisma.booking.aggregate({
       where: { eventId: event.id, status: 'confirmed' },
       _sum: { seats: true },
     });
     const occupied = confirmedSeats._sum.seats ?? 0;
-    const available = (event.capacity ?? 0) - occupied;
+    const available = event.capacity != null ? event.capacity - occupied : Infinity;
 
     if (available >= dto.seats) {
       // Prenotazione confermata
@@ -58,8 +74,8 @@ export class BookingsService {
         },
       });
 
-      this.uploadQr(booking.id)
-        .then(qrUrl => this.mail.sendBookingConfirmation({ booking, event, qrUrl }))
+      this.uploadQrAll(booking.id, booking.seats)
+        .then(qrUrls => this.mail.sendBookingConfirmation({ booking, event, qrUrls }))
         .catch(err => this.logger.error('sendBookingConfirmation failed', err));
 
       return { status: 'confirmed', bookingId: booking.id, cancelToken: booking.cancelToken };
@@ -141,8 +157,8 @@ export class BookingsService {
       });
       available -= w.seats;
 
-      this.uploadQr(w.id)
-        .then(qrUrl => this.mail.sendBookingConfirmation({ booking: w, event, qrUrl }))
+      this.uploadQrAll(w.id, w.seats)
+        .then(qrUrls => this.mail.sendBookingConfirmation({ booking: w, event, qrUrls }))
         .catch(err => this.logger.error('sendBookingConfirmation (promoted) failed', err));
     }
 
@@ -183,7 +199,9 @@ export class BookingsService {
     };
   }
 
-  async verify(bookingId: string) {
+  async verify(raw: string) {
+    const bookingId = raw.split('|')[0];
+    const seatNum = raw.includes('|') ? Number(raw.split('|')[1]) : null;
     const booking = await this.prisma.booking.findUnique({
       where: { id: bookingId },
       include: { event: { select: { name: true, date: true, time: true, location: true } } },
@@ -195,7 +213,9 @@ export class BookingsService {
       name: booking.name,
       email: booking.email,
       seats: booking.seats,
+      seatNum,
       status: booking.status,
+      eventId: booking.eventId,
       eventName: booking.event.name,
       eventDate: booking.event.date,
       eventTime: booking.event.time,

@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from '../s3/s3.service';
-import { CreateEventDto } from './dto/create-event.dto';
+import { TelegramService } from '../telegram/telegram.service';
+import { CreateEventDto, EventAccessType } from './dto/create-event.dto';
 
 function slugify(text: string): string {
   return text
@@ -27,16 +28,42 @@ const EVENT_SELECT = {
   cover: true,
   uploadToken: true,
   uploadUrl: true,
+  accessType: true,
   hasCapacity: true,
   capacity: true,
 } as const;
 
 @Injectable()
 export class EventsService {
+  private readonly logger = new Logger(EventsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly r2: S3Service,
+    private readonly telegram: TelegramService,
   ) {}
+
+  private buildEventNotify(event: { name: string; date: Date; time: string; location: string; description?: string | null; slug: string | null; accessType: string; cover?: string | null }) {
+    const dateStr = event.date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const appUrl  = process.env.APP_PUBLIC_URL ?? 'https://acr-milano.it';
+    const accessLabel: Record<string, string> = {
+      public:       '🌐 Pubblico',
+      limited:      '🎟 A numero chiuso',
+      members_only: '👥 Solo soci',
+    };
+    return {
+      title: `📅 Nuovo evento!`,
+      cover: event.cover,
+      description: event.description,
+      link: `${appUrl}/events/${event.slug}`,
+      lines: [
+        `*${event.name}*`,
+        `📆 ${dateStr} alle ${event.time}`,
+        `📍 ${event.location}`,
+        accessLabel[event.accessType] ?? '',
+      ],
+    };
+  }
 
   getAll() {
     return this.prisma.event.findMany({
@@ -67,11 +94,13 @@ export class EventsService {
     }
   }
 
-  create(dto: CreateEventDto) {
+  async create(dto: CreateEventDto) {
     const id = randomUUID();
     const slug = `${slugify(dto.name)}-${id.slice(0, 8)}`;
+    const accessType = dto.accessType ?? EventAccessType.public;
+    const hasCapacity = accessType === EventAccessType.limited;
 
-    return this.prisma.event.create({
+    const event = await this.prisma.event.create({
       data: {
         id,
         slug,
@@ -82,11 +111,17 @@ export class EventsService {
         description: dto.description,
         images: dto.images ?? [],
         cover: dto.cover,
-        hasCapacity: dto.hasCapacity ?? false,
-        capacity: dto.hasCapacity ? (dto.capacity ?? null) : null,
+        accessType,
+        hasCapacity,
+        capacity: hasCapacity ? (dto.capacity ?? null) : null,
       },
       select: EVENT_SELECT,
     });
+
+    this.telegram.notify(this.buildEventNotify({ ...event, date: new Date(event.date) }))
+      .catch(err => this.logger.error('Telegram notify failed', err));
+
+    return event;
   }
 
   async delete(id: string) {

@@ -415,20 +415,26 @@ export class MailService {
   async sendBookingConfirmation(opts: {
     booking: { id: string; name: string; email: string; seats: number; cancelToken: string; createdAt: Date };
     event: { name: string; date: Date | string; time: string; location: string };
-    qrUrl: string;
+    qrUrls: string[];
   }): Promise<void> {
-    const { booking, event, qrUrl } = opts;
+    const { booking, event, qrUrls } = opts;
     const dateStr = new Date(event.date).toLocaleDateString('it-IT', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     });
     const cancelUrl = `${this.appUrl}/bookings/cancel/${booking.cancelToken}`;
-    const gcalBase = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
-    const gcalDate = new Date(event.date).toISOString().replace(/-|:|\.\d{3}/g, '').slice(0, 8);
-    const gcalUrl = `${gcalBase}&text=${encodeURIComponent(event.name)}&dates=${gcalDate}/${gcalDate}&details=${encodeURIComponent(`Prenotazione: ${booking.name} — ${booking.seats} posto/i`)}&location=${encodeURIComponent(event.location)}`;
+    const toGCalDate = (date: Date | string, time: string, addHours = 0): string => {
+      const [h, m] = time.replace('.', ':').split(':').map(Number);
+      const [year, month, day] = new Date(date).toISOString().slice(0, 10).split('-').map(Number);
+      const d = new Date(year, month - 1, day, (h || 0) + addHours, m || 0, 0);
+      const p = (n: number) => String(n).padStart(2, '0');
+      return `${year}${p(month)}${p(day)}T${p(d.getHours())}${p(d.getMinutes())}00`;
+    };
+    const gcalStart = toGCalDate(event.date, event.time);
+    const gcalEnd   = toGCalDate(event.date, event.time, 2);
+    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.name)}&dates=${gcalStart}/${gcalEnd}&details=${encodeURIComponent(`Prenotazione: ${booking.name} — ${booking.seats} posto/i`)}&location=${encodeURIComponent(event.location)}`;
 
-    const html = this.layout(`
-      <!-- Biglietto stile Ticketone -->
-      <table width="100%" cellpadding="0" cellspacing="0" style="border:2px solid #002068;border-radius:16px;overflow:hidden;margin-bottom:28px;">
+    const ticketBlock = (qrUrl: string, seatIndex: number) => `
+      <table width="100%" cellpadding="0" cellspacing="0" style="border:2px solid #002068;border-radius:16px;overflow:hidden;margin-bottom:${seatIndex < booking.seats - 1 ? '20px' : '28px'};">
         <!-- Banda superiore -->
         <tr>
           <td style="background:#002068;padding:20px 28px;">
@@ -440,8 +446,8 @@ export class MailService {
                 </td>
                 <td align="right" style="vertical-align:top;">
                   <div style="background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 14px;text-align:center;">
-                    <p style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">${booking.seats}</p>
-                    <p style="margin:2px 0 0;color:rgba(255,255,255,0.7);font-size:10px;letter-spacing:1px;">${booking.seats === 1 ? 'POSTO' : 'POSTI'}</p>
+                    <p style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">${seatIndex + 1}/${booking.seats}</p>
+                    <p style="margin:2px 0 0;color:rgba(255,255,255,0.7);font-size:10px;letter-spacing:1px;">POSTO</p>
                   </div>
                 </td>
               </tr>
@@ -500,10 +506,15 @@ export class MailService {
         <tr>
           <td style="background:#f4f3fc;padding:14px 28px;border-top:2px dashed #e0e0e0;">
             <p style="margin:0;font-size:10px;color:#888;letter-spacing:1px;text-transform:uppercase;">Codice prenotazione</p>
-            <p style="margin:4px 0 0;font-size:13px;font-weight:700;color:#002068;font-family:monospace;letter-spacing:2px;">${booking.id.toUpperCase().slice(0, 12)}</p>
+            <p style="margin:4px 0 0;font-size:13px;font-weight:700;color:#002068;font-family:monospace;letter-spacing:2px;">${booking.id.toUpperCase().slice(0, 12)}-${seatIndex + 1}</p>
           </td>
         </tr>
-      </table>
+      </table>`;
+
+    const ticketsHtml = qrUrls.map((url, i) => ticketBlock(url, i)).join('');
+
+    const html = this.layout(`
+      ${ticketsHtml}
 
       <!-- CTA Calendario -->
       <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">

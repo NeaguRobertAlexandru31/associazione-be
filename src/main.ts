@@ -30,7 +30,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, cb) => {
-      if (!origin || allowedOrigins.some(o => origin === o || origin.startsWith('http://192.168.') || origin.startsWith('http://10.') || origin.startsWith('http://172.'))) {
+      if (!origin || allowedOrigins.some(o => origin === o) || origin.startsWith('http://192.168.') || origin.startsWith('http://10.') || origin.startsWith('http://172.') || origin.endsWith('.ngrok-free.dev') || origin.endsWith('.ngrok-free.app') || origin.endsWith('.ngrok.io')) {
         cb(null, true);
       } else {
         cb(new Error(`Origin ${origin} not allowed`));

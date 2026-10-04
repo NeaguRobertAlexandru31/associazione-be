@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from '../s3/s3.service';
+import { TelegramService } from '../telegram/telegram.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 
 const PROJECT_SELECT = {
@@ -17,9 +18,12 @@ const PROJECT_SELECT = {
 
 @Injectable()
 export class ProjectsService {
+  private readonly logger = new Logger(ProjectsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly r2: S3Service,
+    private readonly telegram: TelegramService,
   ) {}
 
   getAll() {
@@ -38,8 +42,8 @@ export class ProjectsService {
     return project;
   }
 
-  create(dto: CreateProjectDto) {
-    return this.prisma.project.create({
+  async create(dto: CreateProjectDto) {
+    const project = await this.prisma.project.create({
       data: {
         title: dto.title,
         description: dto.description,
@@ -50,6 +54,24 @@ export class ProjectsService {
       },
       select: PROJECT_SELECT,
     });
+
+    const appUrl = process.env.APP_PUBLIC_URL ?? 'https://acr-milano.it';
+    const categoryLabel: Record<string, string> = {
+      cultura: '🎭 Cultura', tradizione: '🏛 Tradizione',
+      sociale: '🤝 Sociale', educazione: '📚 Educazione',
+    };
+    this.telegram.notify({
+      title: '🗂 Nuovo progetto!',
+      cover: project.cover,
+      description: project.description,
+      link: `${appUrl}/projects/${project.id}`,
+      lines: [
+        `*${project.title}*`,
+        categoryLabel[project.category] ?? project.category,
+      ],
+    }).catch(err => this.logger.error('Telegram notify failed', err));
+
+    return project;
   }
 
   async update(id: string, dto: Partial<CreateProjectDto>) {

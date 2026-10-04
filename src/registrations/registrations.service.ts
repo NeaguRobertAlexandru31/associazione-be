@@ -2,12 +2,14 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../encryption/encryption.service';
 import { MailService } from '../mail/mail.service';
 import { StripeService } from '../stripe/stripe.service';
+import { TelegramService } from '../telegram/telegram.service';
 import {
   CreateRegistrationDto,
   MemberCategory,
@@ -16,11 +18,14 @@ import {
 
 @Injectable()
 export class RegistrationsService {
+  private readonly logger = new Logger(RegistrationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly enc: EncryptionService,
     private readonly mail: MailService,
     private readonly stripe: StripeService,
+    private readonly telegram: TelegramService,
   ) {}
 
   async create(dto: CreateRegistrationDto) {
@@ -143,6 +148,27 @@ export class RegistrationsService {
         })
         .catch(() => {});
     }
+
+    const categoryLabel: Record<string, string> = {
+      ordinario: '👤 Ordinario',
+      sostenitore: '🌟 Sostenitore',
+      under26: '🎓 Under 26',
+      onorario: '🏅 Onorario',
+    };
+    const paymentLabel: Record<string, string> = {
+      contanti: '💵 Contanti',
+      bonifico: '🏦 Bonifico',
+      online: '💳 Online',
+    };
+    this.telegram.notifyAdmin([
+      `👤 *Nuova iscrizione ${membershipYear}*`,
+      '',
+      `*${dto.firstName} ${dto.lastName}*`,
+      `📧 ${dto.email}`,
+      categoryLabel[dto.category] ?? dto.category,
+      paymentLabel[dto.paymentMethod] ?? dto.paymentMethod,
+      `🆔 ID: \`${member.id}\``,
+    ].join('\n')).catch(err => this.logger.error('Telegram admin notify failed', err));
 
     const response: Record<string, unknown> = {
       id: member.id,

@@ -1,13 +1,19 @@
 import {
   IsArray,
-  IsBoolean,
-  IsDateString,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsDateString,
   Min,
 } from 'class-validator';
+
+export enum EventAccessType {
+  public = 'public',
+  limited = 'limited',
+  members_only = 'members_only',
+}
 
 export class CreateEventDto {
   @IsString()
@@ -38,9 +44,9 @@ export class CreateEventDto {
   @IsOptional()
   cover?: string;
 
-  @IsBoolean()
+  @IsEnum(EventAccessType)
   @IsOptional()
-  hasCapacity?: boolean;
+  accessType?: EventAccessType;
 
   @IsInt()
   @Min(1)

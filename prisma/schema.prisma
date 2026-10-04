@@ -63,6 +63,12 @@ enum ProjectStatus {
   completed
 }
 
+enum EventAccessType {
+  public
+  limited
+  members_only
+}
+
 enum DonationFrequency {
   once
   monthly
@@ -139,7 +145,8 @@ model Event {
   cover        String?
   uploadToken  String?
   uploadUrl    String?
-  hasCapacity  Boolean      @default(false)
+  accessType   EventAccessType @default(public)
+  hasCapacity  Boolean         @default(false)
   capacity     Int?
   rsvps        EventRsvp[]
   photos       EventPhoto[]
