@@ -55,7 +55,7 @@ export class AppStack extends cdk.Stack {
     const depsLayer = new lambda.LayerVersion(this, 'BackendDepsLayer', {
       layerVersionName: `associazione-backend-deps-${stage}`,
       code: lambda.Code.fromAsset(
-        path.join(__dirname, '../../../lambda-bundle/layer'),
+        path.join(__dirname, '../../../../lambda-bundle/layer'),
       ),
       compatibleRuntimes: [lambda.Runtime.NODEJS_22_X],
       description: 'node_modules per NestJS backend',
@@ -66,7 +66,7 @@ export class AppStack extends cdk.Stack {
       runtime:      lambda.Runtime.NODEJS_22_X,
       handler:      'src/lambda.handler',
       code:         lambda.Code.fromAsset(
-        path.join(__dirname, '../../../lambda-bundle/code'),
+        path.join(__dirname, '../../../../lambda-bundle/code'),
       ),
       layers:     [depsLayer],
       timeout:    cdk.Duration.seconds(30),
