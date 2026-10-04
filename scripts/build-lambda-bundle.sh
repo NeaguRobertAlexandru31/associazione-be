@@ -22,7 +22,7 @@ cp -r "$BE_DIR/dist/." "$CODE_DIR/"
 echo "==> Installing production dependencies into layer..."
 cp "$BE_DIR/package.json" "$LAYER_DIR/package.json"
 cp "$BE_DIR/package-lock.json" "$LAYER_DIR/package-lock.json"
-# Installa per linux-x64 (target Lambda) usando npm_config env vars
+# Installa per linux-x64 (target Lambda)
 npm_config_os=linux npm_config_cpu=x64 npm_config_libc=glibc npm ci --omit=dev --prefix "$LAYER_DIR"
 rm -f "$LAYER_DIR/package.json" "$LAYER_DIR/package-lock.json"
 
@@ -32,18 +32,16 @@ cp -r "$BE_DIR/node_modules/.prisma/client" "$LAYER_DIR/node_modules/.prisma/cli
 
 echo "==> Cleaning unnecessary packages from layer..."
 
-# Rimuovi Prisma CLI e TypeScript
+# Prisma CLI e dev tools
 rm -rf "$LAYER_DIR/node_modules/prisma"
 rm -rf "$LAYER_DIR/node_modules/typescript"
-
-# Rimuovi Prisma Studio e dev tools
 rm -rf "$LAYER_DIR/node_modules/@prisma/studio-core"
 rm -rf "$LAYER_DIR/node_modules/@prisma/dev"
 
-# Rimuovi schema-engine (per migrate, non serve a runtime)
+# Prisma schema-engine (non serve a runtime)
 find "$LAYER_DIR/node_modules/@prisma/engines" -name "schema-engine-*" -delete 2>/dev/null || true
 
-# Prisma 7: rimuovi WASM engine per DB non usati
+# Prisma WASM engine per DB non usati
 PRISMA_RUNTIME="$LAYER_DIR/node_modules/@prisma/client/runtime"
 for f in "$PRISMA_RUNTIME"/*.{js,mjs}; do
   [ -f "$f" ] || continue
@@ -53,11 +51,47 @@ for f in "$PRISMA_RUNTIME"/*.{js,mjs}; do
   fi
 done
 
-# Rimuovi @types
+# @electric-sql e effect (dipendenze Prisma non usate a runtime)
+rm -rf "$LAYER_DIR/node_modules/@electric-sql"
+rm -rf "$LAYER_DIR/node_modules/effect"
+
+# @zxing — sostituito da jsqr
+rm -rf "$LAYER_DIR/node_modules/@zxing"
+
+# jimp e dipendenze — non usato (usiamo solo sharp + jsqr)
+rm -rf "$LAYER_DIR/node_modules/jimp"
+rm -rf "$LAYER_DIR/node_modules/@jimp"
+rm -rf "$LAYER_DIR/node_modules/gifwrap"
+rm -rf "$LAYER_DIR/node_modules/omggif"
+rm -rf "$LAYER_DIR/node_modules/utif2"
+
+# react-dom e react — non servono nel backend
+rm -rf "$LAYER_DIR/node_modules/react-dom"
+rm -rf "$LAYER_DIR/node_modules/react"
+
+# sharp — tieni solo i binari linux-x64 (quello per Lambda)
+# Rimuovi binari per altre piattaforme
+rm -rf "$LAYER_DIR/node_modules/@img/sharp-darwin-arm64"
+rm -rf "$LAYER_DIR/node_modules/@img/sharp-darwin-x64"
+rm -rf "$LAYER_DIR/node_modules/@img/sharp-win32-x64"
+rm -rf "$LAYER_DIR/node_modules/@img/sharp-linuxmusl-x64"
+rm -rf "$LAYER_DIR/node_modules/@img/sharp-linuxmusl-arm64"
+rm -rf "$LAYER_DIR/node_modules/@img/sharp-linux-arm"
+rm -rf "$LAYER_DIR/node_modules/@img/sharp-linux-arm64"
+
+# @nestjs/schedule — non usato in produzione
+rm -rf "$LAYER_DIR/node_modules/@nestjs/schedule"
+
+# @types
 rm -rf "$LAYER_DIR/node_modules/@types"
 
-# Rimuovi source maps
+# Source maps
 find "$LAYER_DIR/node_modules" -name "*.map" -delete 2>/dev/null || true
+
+# Test e benchmark files
+find "$LAYER_DIR/node_modules" -type d -name "__tests__" -exec rm -rf {} + 2>/dev/null || true
+find "$LAYER_DIR/node_modules" -type d -name "test" -exec rm -rf {} + 2>/dev/null || true
+find "$LAYER_DIR/node_modules" -name "*.test.js" -delete 2>/dev/null || true
 
 echo "==> Sizes:"
 echo "  Code:  $(du -sh "$CODE_DIR" | cut -f1)"

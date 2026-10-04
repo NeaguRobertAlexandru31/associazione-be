@@ -41,12 +41,23 @@ export class TelegramService implements OnModuleInit {
 
   onModuleInit() {
     if (!this.token) return;
-    fetch(`https://api.telegram.org/bot${this.token}/deleteWebhook`)
-      .then(() => this.startPolling())
-      .catch(err => this.logger.error('deleteWebhook failed', err));
+    if (process.env.NODE_ENV === 'production') {
+      // In produzione (Lambda) usa webhook — il polling non è compatibile con Lambda
+      const webhookUrl = `${process.env.APP_PUBLIC_URL}/telegram/webhook`;
+      fetch(`https://api.telegram.org/bot${this.token}/setWebhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: webhookUrl }),
+      }).catch(err => this.logger.error('setWebhook failed', err));
+    } else {
+      // In locale usa polling
+      fetch(`https://api.telegram.org/bot${this.token}/deleteWebhook`)
+        .then(() => this.startPolling())
+        .catch(err => this.logger.error('deleteWebhook failed', err));
+    }
   }
 
-  // ── Polling ──────────────────────────────────────────────────────────────────
+  // ── Polling (solo locale) ────────────────────────────────────────────────────
 
   private startPolling() {
     if (this.polling) return;

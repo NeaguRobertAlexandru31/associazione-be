@@ -68,6 +68,133 @@ export class EventPhotosService {
     return { token, uploadUrl };
   }
 
+  async presignUploads(
+    slug: string,
+    rawToken: string,
+    files: { name: string; type: string }[],
+    uploaderName: string,
+    uploaderEmail?: string,
+  ): Promise<{ presignedUrls: { uploadUrl: string; key: string }[] }> {
+    let payload: UploadTokenPayload;
+    try {
+      payload = this.jwt.verify<UploadTokenPayload>(rawToken);
+    } catch {
+      throw new UnauthorizedException('Token non valido o scaduto');
+    }
+
+    if (!uploaderName?.trim()) throw new BadRequestException('Il nome è obbligatorio');
+
+    const event = await this.prisma.event.findUnique({ where: { slug }, select: { id: true } });
+    if (!event) throw new NotFoundException('Evento non trovato');
+    if (event.id !== payload.sub) throw new UnauthorizedException('Token non valido per questo evento');
+
+    const totalExisting = await this.prisma.eventPhoto.count({ where: { eventId: event.id } });
+    if (totalExisting >= PHOTO_LIMIT_PER_EVENT)
+      throw new BadRequestException(`Limite massimo di ${PHOTO_LIMIT_PER_EVENT} foto raggiunto`);
+
+    const email = uploaderEmail?.trim().toLowerCase() || null;
+    const userExisting = email
+      ? await this.prisma.eventPhoto.count({ where: { eventId: event.id, uploaderEmail: email } })
+      : await this.prisma.eventPhoto.count({ where: { eventId: event.id, tokenSub: payload.sub } });
+    const remaining = Math.min(
+      PHOTO_LIMIT_PER_USER - userExisting,
+      PHOTO_LIMIT_PER_EVENT - totalExisting,
+    );
+    if (remaining <= 0)
+      throw new BadRequestException(`Hai già caricato il massimo di ${PHOTO_LIMIT_PER_USER} foto per questo evento`);
+
+    const toProcess = files.slice(0, remaining);
+    const presignedUrls = await Promise.all(
+      toProcess.map(async (f) => {
+        const ext = f.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+        const contentType = f.type || 'image/jpeg';
+        const key = `event-photos-raw/${event.id}/${randomBytes(10).toString('hex')}.${ext}`;
+        const uploadUrl = await this.r2.presignedPut(key, contentType, 600);
+        return { uploadUrl, key };
+      }),
+    );
+
+    return { presignedUrls };
+  }
+
+  async confirmUploads(
+    slug: string,
+    rawToken: string,
+    keys: string[],
+    uploaderName: string,
+    uploaderEmail?: string,
+  ): Promise<{ uploaded: number }> {
+    let payload: UploadTokenPayload;
+    try {
+      payload = this.jwt.verify<UploadTokenPayload>(rawToken);
+    } catch {
+      throw new UnauthorizedException('Token non valido o scaduto');
+    }
+
+    const event = await this.prisma.event.findUnique({
+      where: { slug },
+      select: { id: true, name: true, date: true },
+    });
+    if (!event) throw new NotFoundException('Evento non trovato');
+    if (event.id !== payload.sub) throw new UnauthorizedException('Token non valido per questo evento');
+
+    if (!keys?.length) throw new BadRequestException('Nessuna chiave ricevuta');
+
+    const email = uploaderEmail?.trim().toLowerCase() || null;
+    const isMember = email ? !!(await this.prisma.member.findFirst({
+      where: { email, status: 'attivo' }, select: { id: true },
+    })) : false;
+
+    // Scarica da S3, applica watermark, ri-carica in percorso definitivo
+    const urls = await Promise.all(
+      keys.map(async (key) => {
+        const rawBuf = await this.r2.download(key);
+        let buf = await sharp(rawBuf)
+          .rotate()
+          .resize({ width: 1920, withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toBuffer();
+        buf = await this.watermark.apply(buf);
+        const finalKey = `event-photos/${event.id}/${randomBytes(10).toString('hex')}.webp`;
+        const url = await this.r2.upload(finalKey, buf);
+        // Rimuove il file raw temporaneo
+        await this.r2.delete(key).catch(() => {});
+        return url;
+      }),
+    );
+
+    await this.prisma.eventPhoto.createMany({
+      data: urls.map((url) => ({
+        eventId: event.id,
+        url,
+        approved: true,
+        tokenSub: payload.sub,
+        uploaderName: uploaderName.trim(),
+        uploaderEmail: email ?? null,
+        isMember,
+      })),
+    });
+
+    this.mail.sendPhotoUploadAlert({
+      uploaderName: uploaderName.trim(),
+      uploaderEmail: email,
+      isMember,
+      eventName: event.name,
+      eventDate: event.date.toISOString(),
+      uploaded: urls.length,
+      dashboardUrl: `${process.env.CORS_ORIGIN ?? 'https://acr-milano.it'}/dashboard/events`,
+    }).catch(err => this.logger.error('sendPhotoUploadAlert failed', err));
+
+    if (email) {
+      this.sendThankYouEmail({
+        name: uploaderName.trim(), email, eventName: event.name,
+        eventDate: event.date.toISOString(), uploaded: urls.length, isMember,
+      }).catch(err => this.logger.error('sendThankYouEmail failed', err));
+    }
+
+    return { uploaded: urls.length };
+  }
+
   async uploadPhotos(
     slug: string,
     rawToken: string,

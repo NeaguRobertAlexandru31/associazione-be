@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ib1nGeAS2UfGDBC9fL8I4KIDmKdaf0KeYtxNpk0DMAdibVPr24uB4APs4Gbnkju
+\restrict Kob5k76DexBqRzmAeeCQXLf9fR6kljdod5MoNAFPR2UGIU5J5unAnScYcKg7ngD
 
 -- Dumped from database version 16.13 (Homebrew)
 -- Dumped by pg_dump version 16.13 (Homebrew)
@@ -19,17 +19,36 @@ SET client_min_messages = warning;
 SET row_security = off;
 
 --
--- Name: AdminRole; Type: TYPE; Schema: public; Owner: -
+-- Name: public; Type: SCHEMA; Schema: -; Owner: robertalexandruneagu
 --
 
-CREATE TYPE public."AdminRole" AS ENUM (
-    'SUPERADMIN',
-    'ADMIN'
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA public OWNER TO robertalexandruneagu;
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: robertalexandruneagu
+--
+
+COMMENT ON SCHEMA public IS '';
+
+
+--
+-- Name: BookingStatus; Type: TYPE; Schema: public; Owner: robertalexandruneagu
+--
+
+CREATE TYPE public."BookingStatus" AS ENUM (
+    'confirmed',
+    'waitlist',
+    'cancelled'
 );
 
 
+ALTER TYPE public."BookingStatus" OWNER TO robertalexandruneagu;
+
 --
--- Name: DocType; Type: TYPE; Schema: public; Owner: -
+-- Name: DocType; Type: TYPE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TYPE public."DocType" AS ENUM (
@@ -39,8 +58,25 @@ CREATE TYPE public."DocType" AS ENUM (
 );
 
 
+ALTER TYPE public."DocType" OWNER TO robertalexandruneagu;
+
 --
--- Name: DonationFrequency; Type: TYPE; Schema: public; Owner: -
+-- Name: DocumentCategory; Type: TYPE; Schema: public; Owner: robertalexandruneagu
+--
+
+CREATE TYPE public."DocumentCategory" AS ENUM (
+    'verbale',
+    'statuto',
+    'regolamento',
+    'bilancio',
+    'altro'
+);
+
+
+ALTER TYPE public."DocumentCategory" OWNER TO robertalexandruneagu;
+
+--
+-- Name: DonationFrequency; Type: TYPE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TYPE public."DonationFrequency" AS ENUM (
@@ -49,8 +85,10 @@ CREATE TYPE public."DonationFrequency" AS ENUM (
 );
 
 
+ALTER TYPE public."DonationFrequency" OWNER TO robertalexandruneagu;
+
 --
--- Name: DonationMethod; Type: TYPE; Schema: public; Owner: -
+-- Name: DonationMethod; Type: TYPE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TYPE public."DonationMethod" AS ENUM (
@@ -59,8 +97,23 @@ CREATE TYPE public."DonationMethod" AS ENUM (
 );
 
 
+ALTER TYPE public."DonationMethod" OWNER TO robertalexandruneagu;
+
 --
--- Name: GuardianRelation; Type: TYPE; Schema: public; Owner: -
+-- Name: EventAccessType; Type: TYPE; Schema: public; Owner: robertalexandruneagu
+--
+
+CREATE TYPE public."EventAccessType" AS ENUM (
+    'public',
+    'limited',
+    'members_only'
+);
+
+
+ALTER TYPE public."EventAccessType" OWNER TO robertalexandruneagu;
+
+--
+-- Name: GuardianRelation; Type: TYPE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TYPE public."GuardianRelation" AS ENUM (
@@ -69,8 +122,10 @@ CREATE TYPE public."GuardianRelation" AS ENUM (
 );
 
 
+ALTER TYPE public."GuardianRelation" OWNER TO robertalexandruneagu;
+
 --
--- Name: MemberCategory; Type: TYPE; Schema: public; Owner: -
+-- Name: MemberCategory; Type: TYPE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TYPE public."MemberCategory" AS ENUM (
@@ -80,8 +135,10 @@ CREATE TYPE public."MemberCategory" AS ENUM (
 );
 
 
+ALTER TYPE public."MemberCategory" OWNER TO robertalexandruneagu;
+
 --
--- Name: MemberGender; Type: TYPE; Schema: public; Owner: -
+-- Name: MemberGender; Type: TYPE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TYPE public."MemberGender" AS ENUM (
@@ -91,8 +148,10 @@ CREATE TYPE public."MemberGender" AS ENUM (
 );
 
 
+ALTER TYPE public."MemberGender" OWNER TO robertalexandruneagu;
+
 --
--- Name: MemberStatus; Type: TYPE; Schema: public; Owner: -
+-- Name: MemberStatus; Type: TYPE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TYPE public."MemberStatus" AS ENUM (
@@ -103,8 +162,10 @@ CREATE TYPE public."MemberStatus" AS ENUM (
 );
 
 
+ALTER TYPE public."MemberStatus" OWNER TO robertalexandruneagu;
+
 --
--- Name: PaymentMethod; Type: TYPE; Schema: public; Owner: -
+-- Name: PaymentMethod; Type: TYPE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TYPE public."PaymentMethod" AS ENUM (
@@ -113,8 +174,10 @@ CREATE TYPE public."PaymentMethod" AS ENUM (
 );
 
 
+ALTER TYPE public."PaymentMethod" OWNER TO robertalexandruneagu;
+
 --
--- Name: ProjectCategory; Type: TYPE; Schema: public; Owner: -
+-- Name: ProjectCategory; Type: TYPE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TYPE public."ProjectCategory" AS ENUM (
@@ -125,8 +188,10 @@ CREATE TYPE public."ProjectCategory" AS ENUM (
 );
 
 
+ALTER TYPE public."ProjectCategory" OWNER TO robertalexandruneagu;
+
 --
--- Name: ProjectStatus; Type: TYPE; Schema: public; Owner: -
+-- Name: ProjectStatus; Type: TYPE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TYPE public."ProjectStatus" AS ENUM (
@@ -135,56 +200,64 @@ CREATE TYPE public."ProjectStatus" AS ENUM (
 );
 
 
+ALTER TYPE public."ProjectStatus" OWNER TO robertalexandruneagu;
+
+--
+-- Name: UserRole; Type: TYPE; Schema: public; Owner: robertalexandruneagu
+--
+
+CREATE TYPE public."UserRole" AS ENUM (
+    'SUPERADMIN',
+    'ADMIN',
+    'MEMBER'
+);
+
+
+ALTER TYPE public."UserRole" OWNER TO robertalexandruneagu;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- Name: AdminInvite; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public."AdminInvite" (
-    id text NOT NULL,
-    token text NOT NULL,
-    "createdById" text NOT NULL,
-    "usedAt" timestamp(3) without time zone,
-    "expiresAt" timestamp(3) without time zone NOT NULL,
-    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-
-
---
--- Name: AdminUser; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public."AdminUser" (
-    id text NOT NULL,
-    name text NOT NULL,
-    email text NOT NULL,
-    "passwordHash" text NOT NULL,
-    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL,
-    role public."AdminRole" DEFAULT 'ADMIN'::public."AdminRole" NOT NULL
-);
-
-
---
--- Name: Article; Type: TABLE; Schema: public; Owner: -
+-- Name: Article; Type: TABLE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TABLE public."Article" (
     id text NOT NULL,
     name text NOT NULL,
-    description text NOT NULL,
     categories text[],
-    images text[],
+    blocks jsonb DEFAULT '[]'::jsonb NOT NULL,
+    cover text,
     "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updatedAt" timestamp(3) without time zone NOT NULL
 );
 
 
+ALTER TABLE public."Article" OWNER TO robertalexandruneagu;
+
 --
--- Name: ContactMessage; Type: TABLE; Schema: public; Owner: -
+-- Name: Booking; Type: TABLE; Schema: public; Owner: robertalexandruneagu
+--
+
+CREATE TABLE public."Booking" (
+    id text NOT NULL,
+    "eventId" text NOT NULL,
+    name text NOT NULL,
+    email text NOT NULL,
+    phone text,
+    seats integer NOT NULL,
+    status public."BookingStatus" DEFAULT 'confirmed'::public."BookingStatus" NOT NULL,
+    "position" integer,
+    "cancelToken" text NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."Booking" OWNER TO robertalexandruneagu;
+
+--
+-- Name: ContactMessage; Type: TABLE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TABLE public."ContactMessage" (
@@ -193,13 +266,34 @@ CREATE TABLE public."ContactMessage" (
     email text NOT NULL,
     subject text,
     message text NOT NULL,
-    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    read boolean DEFAULT false NOT NULL
+    read boolean DEFAULT false NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 
+ALTER TABLE public."ContactMessage" OWNER TO robertalexandruneagu;
+
 --
--- Name: Donation; Type: TABLE; Schema: public; Owner: -
+-- Name: Document; Type: TABLE; Schema: public; Owner: robertalexandruneagu
+--
+
+CREATE TABLE public."Document" (
+    id text NOT NULL,
+    title text NOT NULL,
+    description text,
+    category public."DocumentCategory" NOT NULL,
+    "fileUrl" text NOT NULL,
+    "fileName" text NOT NULL,
+    "fileSize" integer NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."Document" OWNER TO robertalexandruneagu;
+
+--
+-- Name: Donation; Type: TABLE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TABLE public."Donation" (
@@ -215,26 +309,71 @@ CREATE TABLE public."Donation" (
 );
 
 
+ALTER TABLE public."Donation" OWNER TO robertalexandruneagu;
+
 --
--- Name: Event; Type: TABLE; Schema: public; Owner: -
+-- Name: Event; Type: TABLE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TABLE public."Event" (
     id text NOT NULL,
+    slug text,
     name text NOT NULL,
     date timestamp(3) without time zone NOT NULL,
     "time" text NOT NULL,
     location text NOT NULL,
     description text,
     images text[],
+    cover text,
     "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updatedAt" timestamp(3) without time zone NOT NULL,
-    slug text
+    "uploadToken" text,
+    "uploadUrl" text,
+    capacity integer,
+    "hasCapacity" boolean DEFAULT false NOT NULL,
+    "accessType" public."EventAccessType" DEFAULT 'public'::public."EventAccessType" NOT NULL
 );
 
 
+ALTER TABLE public."Event" OWNER TO robertalexandruneagu;
+
 --
--- Name: Guardian; Type: TABLE; Schema: public; Owner: -
+-- Name: EventPhoto; Type: TABLE; Schema: public; Owner: robertalexandruneagu
+--
+
+CREATE TABLE public."EventPhoto" (
+    id text NOT NULL,
+    "eventId" text NOT NULL,
+    url text NOT NULL,
+    approved boolean DEFAULT false NOT NULL,
+    "tokenSub" text NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "isMember" boolean DEFAULT false NOT NULL,
+    "uploaderEmail" text,
+    "uploaderName" text
+);
+
+
+ALTER TABLE public."EventPhoto" OWNER TO robertalexandruneagu;
+
+--
+-- Name: EventRsvp; Type: TABLE; Schema: public; Owner: robertalexandruneagu
+--
+
+CREATE TABLE public."EventRsvp" (
+    id text NOT NULL,
+    "eventId" text NOT NULL,
+    name text NOT NULL,
+    email text,
+    status text DEFAULT 'attending'::text NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."EventRsvp" OWNER TO robertalexandruneagu;
+
+--
+-- Name: Guardian; Type: TABLE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TABLE public."Guardian" (
@@ -243,6 +382,7 @@ CREATE TABLE public."Guardian" (
     "firstName" text NOT NULL,
     "lastName" text NOT NULL,
     "fiscalCode" text NOT NULL,
+    "fiscalCodeHash" text,
     relation public."GuardianRelation" NOT NULL,
     "docType" public."DocType" NOT NULL,
     "docNumber" text NOT NULL,
@@ -250,42 +390,53 @@ CREATE TABLE public."Guardian" (
 );
 
 
+ALTER TABLE public."Guardian" OWNER TO robertalexandruneagu;
+
 --
--- Name: Member; Type: TABLE; Schema: public; Owner: -
+-- Name: Member; Type: TABLE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TABLE public."Member" (
     id text NOT NULL,
-    email text NOT NULL,
-    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL,
-    "addressCity" text NOT NULL,
-    "addressProvince" text NOT NULL,
-    "addressStreet" text NOT NULL,
-    "addressZip" text NOT NULL,
-    "birthDate" timestamp(3) without time zone NOT NULL,
-    "birthPlace" text NOT NULL,
-    category public."MemberCategory" NOT NULL,
-    "docExpiry" timestamp(3) without time zone NOT NULL,
-    "docNumber" text NOT NULL,
-    "docType" public."DocType" NOT NULL,
+    "isMinor" boolean DEFAULT false NOT NULL,
+    category public."MemberCategory" DEFAULT 'ordinario'::public."MemberCategory" NOT NULL,
     "firstName" text NOT NULL,
-    "fiscalCode" text NOT NULL,
-    gender public."MemberGender" NOT NULL,
-    "isMinor" boolean NOT NULL,
     "lastName" text NOT NULL,
-    "membershipYear" integer NOT NULL,
-    "paymentMethod" public."PaymentMethod" NOT NULL,
-    phone text NOT NULL,
-    "privacyBase" boolean NOT NULL,
+    "fiscalCode" text,
+    "fiscalCodeHash" text,
+    "birthDate" timestamp(3) without time zone,
+    "birthPlace" text,
+    gender public."MemberGender",
+    "docType" public."DocType",
+    "docNumber" text,
+    "docExpiry" timestamp(3) without time zone,
+    email text NOT NULL,
+    phone text,
+    "addressStreet" text,
+    "addressZip" text,
+    "addressCity" text,
+    "addressProvince" text,
+    status public."MemberStatus" DEFAULT 'in_attesa_pagamento'::public."MemberStatus" NOT NULL,
+    "membershipYear" integer,
+    "paymentMethod" public."PaymentMethod",
+    "privacyBase" boolean DEFAULT false NOT NULL,
     "privacyNewsletter" boolean DEFAULT false NOT NULL,
     "privacyThirdParties" boolean DEFAULT false NOT NULL,
-    status public."MemberStatus" DEFAULT 'in_attesa_pagamento'::public."MemberStatus" NOT NULL
+    "passwordHash" text,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    "deletedAt" timestamp(3) without time zone,
+    "profileImage" text,
+    "boardRoles" text[],
+    role public."UserRole" DEFAULT 'MEMBER'::public."UserRole" NOT NULL,
+    "pagePermissions" jsonb
 );
 
 
+ALTER TABLE public."Member" OWNER TO robertalexandruneagu;
+
 --
--- Name: NewsletterSubscriber; Type: TABLE; Schema: public; Owner: -
+-- Name: NewsletterSubscriber; Type: TABLE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TABLE public."NewsletterSubscriber" (
@@ -295,8 +446,26 @@ CREATE TABLE public."NewsletterSubscriber" (
 );
 
 
+ALTER TABLE public."NewsletterSubscriber" OWNER TO robertalexandruneagu;
+
 --
--- Name: Product; Type: TABLE; Schema: public; Owner: -
+-- Name: OtpCode; Type: TABLE; Schema: public; Owner: robertalexandruneagu
+--
+
+CREATE TABLE public."OtpCode" (
+    id text NOT NULL,
+    email text NOT NULL,
+    code text NOT NULL,
+    "expiresAt" timestamp(3) without time zone NOT NULL,
+    "usedAt" timestamp(3) without time zone,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."OtpCode" OWNER TO robertalexandruneagu;
+
+--
+-- Name: Product; Type: TABLE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TABLE public."Product" (
@@ -314,8 +483,10 @@ CREATE TABLE public."Product" (
 );
 
 
+ALTER TABLE public."Product" OWNER TO robertalexandruneagu;
+
 --
--- Name: Project; Type: TABLE; Schema: public; Owner: -
+-- Name: Project; Type: TABLE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TABLE public."Project" (
@@ -325,13 +496,29 @@ CREATE TABLE public."Project" (
     category public."ProjectCategory" NOT NULL,
     status public."ProjectStatus" NOT NULL,
     images text[],
+    cover text,
     "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "updatedAt" timestamp(3) without time zone NOT NULL
 );
 
 
+ALTER TABLE public."Project" OWNER TO robertalexandruneagu;
+
 --
--- Name: _prisma_migrations; Type: TABLE; Schema: public; Owner: -
+-- Name: SiteSetting; Type: TABLE; Schema: public; Owner: robertalexandruneagu
+--
+
+CREATE TABLE public."SiteSetting" (
+    key text NOT NULL,
+    value text NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."SiteSetting" OWNER TO robertalexandruneagu;
+
+--
+-- Name: _prisma_migrations; Type: TABLE; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE TABLE public._prisma_migrations (
@@ -346,108 +533,100 @@ CREATE TABLE public._prisma_migrations (
 );
 
 
+ALTER TABLE public._prisma_migrations OWNER TO robertalexandruneagu;
+
 --
--- Data for Name: AdminInvite; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: Article; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
 --
 
-COPY public."AdminInvite" (id, token, "createdById", "usedAt", "expiresAt", "createdAt") FROM stdin;
-fe91d3dc-7f99-4a42-859a-b708cee02a8e	ac967d9c-589a-44c2-a502-4934e47cb78c	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	\N	2026-05-08 12:38:06.428	2026-05-01 12:38:06.44
-74f19fb9-5f4f-4a97-bd01-7f34bf6079ef	5f11eb04-0a8a-432a-a164-08a323c1967e	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	2026-05-01 12:39:29.733	2026-05-08 12:39:03.308	2026-05-01 12:39:03.309
-72a6a1ff-10ac-46a3-bef4-fda5022d6cb9	60f0ac08-8394-4bdb-a814-fc32f539c4e7	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	2026-05-01 14:26:21.944	2026-05-08 14:25:51.885	2026-05-01 14:25:51.896
-126d7271-44a5-4e51-abec-dd7ec46fb0e4	ddf5eaa4-3534-4156-9afb-af9969a897e5	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	\N	2026-05-08 16:04:00.69	2026-05-01 16:04:00.703
-863769ab-5639-45e1-94a8-2989a3a3dcbb	83076cc8-e3ad-48f8-8ca9-1f821b2304b4	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	2026-05-01 16:23:47.312	2026-05-08 16:23:18.372	2026-05-01 16:23:18.373
-cb875b06-b9d0-47b8-ba83-61b33200d364	05005f32-5cc8-454e-98dc-e960544f4ce7	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	\N	2026-05-09 15:10:58.608	2026-05-02 15:10:58.619
-75f975bc-a4d1-47ef-9194-5a6e31117a92	44c49411-9af4-43e6-ba08-30d9535ea89d	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	\N	2026-05-10 13:09:36.533	2026-05-03 13:09:36.543
-cb7243ec-62c6-4780-aacc-c2222480f8ea	9b1e8ca5-5e8c-4b90-921c-b1d37805b97f	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	\N	2026-05-10 13:09:37.986	2026-05-03 13:09:37.986
-a4cfe406-ea26-435e-b41d-fea47104c379	d22fa4b7-abda-43e9-8390-447a46125f79	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	\N	2026-05-10 13:09:38.602	2026-05-03 13:09:38.603
-752a336a-8693-4563-85d3-94e5a39d422f	99a31fdd-4832-45d5-b9a0-0c0d8f52a9f4	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	\N	2026-05-10 13:09:39.119	2026-05-03 13:09:39.12
-1956fe42-1cda-48f4-9de1-d26d70c3b79e	14844b6b-2fbe-42f5-8db1-83ab09dc1e0e	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	\N	2026-05-10 13:09:49.035	2026-05-03 13:09:49.036
-ede05ba7-283c-4f4e-bccf-b3585e969a86	67d35291-26fc-44af-89be-3f48ab4c2a7a	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	\N	2026-05-10 13:09:50.001	2026-05-03 13:09:50.001
-0460b9f0-4d5e-4cd0-a22a-c7fcd6559f2a	9485ff12-3f69-4e01-a948-171df9e1cf94	72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	\N	2026-05-10 13:26:14.826	2026-05-03 13:26:14.826
+COPY public."Article" (id, name, categories, blocks, cover, "createdAt", "updatedAt") FROM stdin;
+c786ba53-2f70-4e87-9a34-0cdba232819f	articolo molto utile	{artigianato}	[{"image": "https://d352fqmooqp9ew.cloudfront.net/articles/ef016affd2ec71182348.webp", "subtitle": "sottotiolo", "paragraph": " asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf "}, {"image": "https://d352fqmooqp9ew.cloudfront.net/articles/ab60c27af0a05fb08f2a.webp", "subtitle": "asdasds", "paragraph": "asdf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf "}, {"image": "https://d352fqmooqp9ew.cloudfront.net/articles/e46020e529f0ccd6b0b8.webp", "subtitle": "sdfssd", "paragraph": "asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf asdnjksdn osadjf "}]	https://d352fqmooqp9ew.cloudfront.net/articles/77d0c0492651b6fb244d.webp	2026-10-03 18:28:32.433	2026-10-03 18:28:32.433
 \.
 
 
 --
--- Data for Name: AdminUser; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: Booking; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
 --
 
-COPY public."AdminUser" (id, name, email, "passwordHash", "createdAt", "updatedAt", role) FROM stdin;
-b2cbe01a-dcbd-49d0-b7fb-766d2180a2e9	Admin	admin@associazione.it	$2b$10$IlRIiAyAvFUYm/fdVm2pAeY0ItSQ8bwAlbMyepVCpyP2IcTRo/TfO	2026-05-01 11:54:05.578	2026-05-01 11:54:05.578	ADMIN
-3eb6fd53-d840-4196-aaf9-f1eec7594e4e	Mihaela Carmen Neagu 	mihaela.c.mcn@gmail.com	$2b$10$HPyZRdgSXlb4fc.n/HCcLOXZC.ZFkv2WvygGRIaYoxBxLm21exYEe	2026-05-01 12:39:29.738	2026-05-01 12:39:29.738	ADMIN
-4c071a72-68fb-44b1-b27f-156fe815fb99	sergiu	sergiu@test.com	$2b$10$bbS2kDdgGI5GTKgprX4LM.qpBC.b3fdZCep77b6rMsDWjl1X1Sr6m	2026-05-01 14:26:21.954	2026-05-01 14:26:21.954	ADMIN
-2bb65da8-26e0-4f50-a365-bca5f80b9248	Angelica Biondo	biondoangelica2002@gmail.com	$2b$10$oJfFLE.rVkq326a9gVlQ4uM3M2P3f5IHlW.bpO0T5HOGQxoEIhlAS	2026-05-01 16:23:47.32	2026-05-01 16:23:47.32	ADMIN
-72ec52f6-f99d-401b-a5c2-cf7b524ce5ca	Neagu Robert Alexandru	neagurobertalexandru@gmail.com	$2b$10$jweaVRSirsdZTlhGJ.Y2JeC1sfDUVyYVwjddC7AWmixxlBKhJ22Du	2026-05-01 12:00:21.319	2026-05-03 13:26:49.868	SUPERADMIN
+COPY public."Booking" (id, "eventId", name, email, phone, seats, status, "position", "cancelToken", "createdAt") FROM stdin;
+cmutkjcpf0000upzbdv0vr6ld	0119119c-1d6f-414e-8bf3-566727b3086f	robert neagu	neagurobertalexandru@gmail.com	1231231231	2	confirmed	\N	cmutkjcpf0001upzb7b5f1chb	2026-10-04 08:38:14.547
+cmutntwv70000razbw38k4kpk	39b6e70f-c37f-499a-965b-6637a319a824	Mihaela	neagurobertalexandru@gmail.com	134848464	2	confirmed	\N	cmutntwv70001razbjwicj4fj	2026-10-04 10:10:26.083
 \.
 
 
 --
--- Data for Name: Article; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: ContactMessage; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
 --
 
-COPY public."Article" (id, name, description, categories, images, "createdAt", "updatedAt") FROM stdin;
+COPY public."ContactMessage" (id, name, email, subject, message, read, "createdAt") FROM stdin;
 \.
 
 
 --
--- Data for Name: ContactMessage; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: Document; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
 --
 
-COPY public."ContactMessage" (id, name, email, subject, message, "createdAt", read) FROM stdin;
-406c744b-063f-41f4-97a5-0c4397abe348	Mario Rossi	mario@example.com	Oggetto opzionale	Testo del messaggio	2026-05-02 15:18:59.349	t
-b0e8d18c-05bb-483c-81c1-12f28808cd1d	robert.neagu@codeploy.it	neagurobertalexandru@gmail.com	asd	asd	2026-05-02 15:27:30.094	t
-676606a5-8231-4d2a-a936-34ea8364d5bd	Mario	mario@test.com		test messaggio	2026-05-02 15:24:35.652	t
-1a14e067-4157-43c2-95f6-b5abe23a744d	Test	test@test.com	\N	ciao	2026-05-02 15:23:27.301	t
-7c0e8800-fc1c-4824-bf01-e1acb41fa2af	Robert Alexandru	neagurobertalexandru@gmail.com	ytfiytfiytf tftyfytf itfytfytfiy	yfguyguyguig	2026-05-02 17:17:55.506	t
-10e68d0a-a1b1-465d-ba8c-8b1e465f679b	test 	test@test.com	aiutatemi 	perfavore 	2026-05-03 11:06:22.484	t
+COPY public."Document" (id, title, description, category, "fileUrl", "fileName", "fileSize", "createdAt", "updatedAt") FROM stdin;
+d4594bde-ce51-444b-be8d-1259f948e22b	asd	asd	regolamento	https://d352fqmooqp9ew.cloudfront.net/documents/85218b0bedf9ba819370.pdf	atto costitutivo e statuto associazione.pdf	1130252	2026-09-26 12:08:43.42	2026-09-26 12:08:43.42
 \.
 
 
 --
--- Data for Name: Donation; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: Donation; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
 --
 
 COPY public."Donation" (id, "donorName", "donorEmail", amount, frequency, method, "stripeSessionId", "memberId", "createdAt") FROM stdin;
+012f113a-f200-422f-96f6-41fca61778fd	123	neagurobertalexandru@gmail.com	25.000000000000000000000000000000	once	card	\N	\N	2026-09-25 13:15:08.524
 \.
 
 
 --
--- Data for Name: Event; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: Event; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
 --
 
-COPY public."Event" (id, name, date, "time", location, description, images, "createdAt", "updatedAt", slug) FROM stdin;
-1be4ccaa-c14f-4b4b-a13b-313d35be006f	dfgdfg	2026-05-30 00:00:00	16:18	dfgdfg	dfgdfg	{/uploads/events/c5f43f106298787f779b.jpeg}	2026-05-02 11:15:23.23	2026-05-02 11:15:23.23	dfgdfg-1be4ccaa
-c4eeea48-dc25-4b2a-953c-0b9037c5e6bf	test di un evento 	2026-05-09 00:00:00	22:22	torino e bricherasio 	descrizione lunga descrizione lunga descrizione lunga descrizione lunga descrizione lunga descrizione lunga descrizione lunga vdescrizione lunga vvvvvdescrizione lunga descrizione lunga descrizione lunga descrizione lunga descrizione lunga descrizione lunga descrizione lunga descrizione lunga 	{/uploads/events/bfdc271800273b9e839b.JPG,/uploads/events/7a931ee8ee05aac4e3cb.jpeg}	2026-05-02 17:20:27.578	2026-05-02 17:20:27.578	test-di-un-evento-c4eeea48
-7360eeda-4537-4805-8f62-b3dcb59b1434	ghfdcykgu	2026-05-14 00:00:00	15:05	gfdfhf	hfhjglglgli	{/uploads/events/0f1319ff49ba549ed77a.jpeg}	2026-05-03 11:04:21.436	2026-05-03 11:04:21.436	ghfdcykgu-7360eeda
+COPY public."Event" (id, slug, name, date, "time", location, description, images, cover, "createdAt", "updatedAt", "uploadToken", "uploadUrl", capacity, "hasCapacity", "accessType") FROM stdin;
+0119119c-1d6f-414e-8bf3-566727b3086f	test-check-telegram-0119119c	test check telegram 	2026-10-23 00:00:00	12:12	12	12	{https://d352fqmooqp9ew.cloudfront.net/events/954b25d2e6fe46b2ce58.webp,https://d352fqmooqp9ew.cloudfront.net/events/97ee1f2b0aac675efb91.webp,https://d352fqmooqp9ew.cloudfront.net/events/70e614a596a8aece10d7.webp}	https://d352fqmooqp9ew.cloudfront.net/events/3ef6dacbafde19e83411.webp	2026-10-04 08:37:45.787	2026-10-04 08:37:58.706	eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTE5MTE5Yy0xZDZmLTQxNGUtOGJmMy01NjY3MjdiMzA4NmYiLCJpYXQiOjE3OTExMDMwNzgsImV4cCI6MTc5Mjk3MjgwMH0.mEbhsBZrD0lIfrp1p9wEGhht4mrTPUfP0g8IKZyAYhE	/events/test-check-telegram-0119119c/upload?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTE5MTE5Yy0xZDZmLTQxNGUtOGJmMy01NjY3MjdiMzA4NmYiLCJpYXQiOjE3OTExMDMwNzgsImV4cCI6MTc5Mjk3MjgwMH0.mEbhsBZrD0lIfrp1p9wEGhht4mrTPUfP0g8IKZyAYhE	4	t	limited
+39b6e70f-c37f-499a-965b-6637a319a824	test-39b6e70f	Test	2026-10-23 00:00:00	12:09	Torino	Descri	{}	https://d352fqmooqp9ew.cloudfront.net/events/5888876c2d284eae12ab.webp	2026-10-04 10:09:17.322	2026-10-04 10:09:59.531	eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOWI2ZTcwZi1jMzdmLTQ5OWEtOTY1Yi02NjM3YTMxOWE4MjQiLCJpYXQiOjE3OTExMDg1OTksImV4cCI6MTc5Mjk3MjgwMH0.VH5GcKg2SGEfvMrJzu8CzMFuuocQt0NEQOaY22zpKbE	/events/test-39b6e70f/upload?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOWI2ZTcwZi1jMzdmLTQ5OWEtOTY1Yi02NjM3YTMxOWE4MjQiLCJpYXQiOjE3OTExMDg1OTksImV4cCI6MTc5Mjk3MjgwMH0.VH5GcKg2SGEfvMrJzu8CzMFuuocQt0NEQOaY22zpKbE	23	t	limited
 \.
 
 
 --
--- Data for Name: Guardian; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: EventPhoto; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
 --
 
-COPY public."Guardian" (id, "memberId", "firstName", "lastName", "fiscalCode", relation, "docType", "docNumber", "docExpiry") FROM stdin;
-68395c3f-70d8-4a6c-80b9-38a8821391e2	55275d2e-7f70-4d6c-94b4-655e43c108fb	Anna	Rossi	RSSNNX60A41H501Y	genitore	ci	CD789012	2027-06-01 00:00:00
-69f7b8ea-366a-4b25-8994-857df2c549b5	954cdf43-7752-4f79-9271-928fa1c4fdd4	Robert Alexandru	Neagu	NGERRT01A31Z129D	genitore	ci	CI129DI	2045-01-23 00:00:00
-bc23d83b-a283-457d-b853-5ed574bf2081	a97e4958-91cf-4be3-8ddd-8d5571fedb4f	Antonietta 	Caggiano 	ASDASD12D12D123F	genitore	ci	123df34	3045-04-23 00:00:00
+COPY public."EventPhoto" (id, "eventId", url, approved, "tokenSub", "createdAt", "isMember", "uploaderEmail", "uploaderName") FROM stdin;
 \.
 
 
 --
--- Data for Name: Member; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: EventRsvp; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
 --
 
-COPY public."Member" (id, email, "createdAt", "updatedAt", "addressCity", "addressProvince", "addressStreet", "addressZip", "birthDate", "birthPlace", category, "docExpiry", "docNumber", "docType", "firstName", "fiscalCode", gender, "isMinor", "lastName", "membershipYear", "paymentMethod", phone, "privacyBase", "privacyNewsletter", "privacyThirdParties", status) FROM stdin;
-43ef75c7-7c55-4d93-a765-d633dba68fdd	mario@example.com	2026-05-01 14:50:03.073	2026-05-01 14:50:03.073	Roma	RM	Via Roma 1	00100	1985-08-01 00:00:00	Roma	ordinario	2028-01-01 00:00:00	AB123456	ci	Mario	RSSMRA85M01H501Z	m	f	Rossi	2026	contanti	+393331234567	t	f	f	in_attesa_pagamento
-55275d2e-7f70-4d6c-94b4-655e43c108fb	mario@example.com	2026-05-01 14:53:14.079	2026-05-01 14:53:14.079	Roma	RM	Via Roma 1	00100	2012-08-01 00:00:00	Roma	ordinario	2028-01-01 00:00:00	AB123456	ci	Mario	RSSMRA85M01H501V	m	t	Rossi	2026	contanti	+393331234567	t	f	f	in_attesa_pagamento
-163c074f-6d2b-48fe-aa24-386a8db95e2b	biondoangelica2002@gmail.com	2026-05-01 15:59:05.36	2026-05-01 15:59:05.36	Atlantide	MM	Via Mario rossi 21	00101	2002-11-05 00:00:00	Moncalieri	sostenitore	2026-05-27 00:00:00	eocnjodnco	ci	Angelica	BNDNLC02S45F335V	altro	f	Biondo	2026	online	3463660177	t	f	f	pagamento_in_corso
-954cdf43-7752-4f79-9271-928fa1c4fdd4	neagurobertalexandru@gmail.com	2026-05-01 16:29:34.645	2026-05-01 16:29:34.645	Bricherasio	TO	Via Brignone 11	10060	2001-01-31 00:00:00	Romania	ordinario	2030-01-31 00:00:00	ci129di	ci	Robert Alexandru	NGERRT01A31Z129D	m	t	Neagu	2026	online	3293171493	t	t	t	pagamento_in_corso
-a97e4958-91cf-4be3-8ddd-8d5571fedb4f	biondoraffaele@gmail.com	2026-05-01 16:32:30.379	2026-05-01 16:32:30.379	Osasco	TO	Via Martiri della Libertà 97	10060	2012-11-05 00:00:00	Pinerolo 	under26	2030-01-23 00:00:00	AC456lk	ci	Raffaele	ASDASD12D12D123F	m	t	Biondo	2026	online	123123123	t	t	t	pagamento_in_corso
-71c8f92a-9d39-4cc1-9463-3b636970b1c9	neagurobertalexandru@gmail.com	2026-05-03 11:14:26.881	2026-05-03 11:14:26.881	Atlantide	MM	Via Mario rossi 21	00101	2001-01-31 00:00:00	Romania	sostenitore	2026-05-28 00:00:00	ci123df	ci	Robert Alexandru	NGERRT01A31Z129H	m	f	Neagu	2026	contanti	3463660177	t	t	t	in_attesa_pagamento
+COPY public."EventRsvp" (id, "eventId", name, email, status, "createdAt") FROM stdin;
 \.
 
 
 --
--- Data for Name: NewsletterSubscriber; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: Guardian; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
+--
+
+COPY public."Guardian" (id, "memberId", "firstName", "lastName", "fiscalCode", "fiscalCodeHash", relation, "docType", "docNumber", "docExpiry") FROM stdin;
+\.
+
+
+--
+-- Data for Name: Member; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
+--
+
+COPY public."Member" (id, "isMinor", category, "firstName", "lastName", "fiscalCode", "fiscalCodeHash", "birthDate", "birthPlace", gender, "docType", "docNumber", "docExpiry", email, phone, "addressStreet", "addressZip", "addressCity", "addressProvince", status, "membershipYear", "paymentMethod", "privacyBase", "privacyNewsletter", "privacyThirdParties", "passwordHash", "createdAt", "updatedAt", "deletedAt", "profileImage", "boardRoles", role, "pagePermissions") FROM stdin;
+32020dcd-50fa-405a-b698-19c6c79333f6	f	ordinario	Robert Alexandru	Neagu	/N/pAm+HGEPl29wi:IYK35uLkCCfnL4nWRvZDjQ==:b0v1RuBBpJZtTL7ZVynlfQ==	2277c3cf9d6ff795c8f49f69398dfdbe79e67b1291a145e1be841e7fd0c0bc76	2001-01-31 00:00:00	rUpo+fEcaBAa1zHo:88L4xDmg1z0Qv5ULKQbq9Q==:Ag1r9rKRZg==	m	ci	EBb9CI50X64SYX4A:GcSXPeipLhRdNW1vyKp7Aw==:rh8coUDXlQ==	2030-01-31 00:00:00	neagurobertalexandru@gmail.com	IOEjR6XMVUrPyf8Q:1wyTcGDjTBCe4DlTDIlcog==:OMVETddj2QS4Sw==	Zg1nyJWNzaLJMICE:nhNOdyDxCRBMMzhDcfPCpw==:+7gKQ+prt5a7iBUsCd6ZmA==	gObo66dRumqe/Wn3:dMn8te83RpgrMFry02UBoA==:CMzuXps=	6erIweUXKBo7jM2R:iX4VLgMZfJNrGt7x206ktw==:SGSNqGxWctZLs2A=	AsO98UQERUxbRC/N:hslCqvLuZXKeoX4OFYBOfw==:w7Y=	attivo	\N	\N	t	f	f	$2b$10$xqenpK9zoFZTQMsSneU0puwPOOt7xWzAE/8g.gfN8/XGngHPbwzvG	2026-09-12 13:52:47.26	2026-09-12 13:58:27.913	\N	https://pub-7c471637e38d4bc2914d5ae9b118f8e7.r2.dev/avatars/6695e12d4cf88a67e43f.webp	{}	SUPERADMIN	\N
+74223da5-91cb-4956-a0f0-b91f09cc6acc	f	sostenitore	asd	asd	zkYXeGlh3pTmRNSD:jUryHDrWDIc+grFXcl1Qmg==:Z77R7dmtgJCcf1v7Kge4eQ==	77de3309fcfcf2a27ae69c449c9ec2bab73bbbd29ef25ea0965bbfc7472a0784	2001-01-31 00:00:00	befboBOrtqNKbuXJ:s74uiGm+QFLIzNY78KZ9vQ==:RHeF	m	ci	Kh9eMHA8M2l5hlrc:CeYWwvSWqNth0H0dMHArnw==:KxVJWTpZ9AcS	2030-01-31 00:00:00	neagurobertalexandru+email@gmail.com	Elh4R/o52yq/QEOq:3gGgez3WcWCucy1i0AT0Xw==:DYjm	QtpvhRAAfBG5kx52:hnlaugg1QXd0k3bDASy/cQ==:Uuzv3B0=	gXkte3OBj2HoivHx:cXtIUzOtpuqNHQbK9GYXYQ==:RyBM	p7pxDmVFLAXpSxTf:8lf06vcP0EZFcbRR5kC/jQ==:ec3t	DVV974UpeWRtNruF:llD3aWUNs7MRPRo1xDSsgQ==:KaU=	attivo	2026	contanti	t	f	f	$2b$10$zxUIHRewK.AHUFM7y9rdAeivOfReu7YLrHigv6GJnZlV0mxu5eO8e	2026-09-26 11:00:29.855	2026-09-26 13:54:32.301	\N	\N	{responsabile_eventi}	ADMIN	{"news": false, "events": false, "members": false, "messages": false, "overview": false, "projects": false, "documents": true, "donations": false, "activities": false}
+8db36391-f676-467a-b754-54f973597b90	f	sostenitore	Angelica	Biondo	AlrnpF1YAqOY/9Ha:9gMz3firs9NbYrjEEyykJw==:W0GzIPYUhK33B3EhcwjHKw==	2277c3cf9d6ff795c8f49f69398dfdbe79e67b1291a145e1be841e7fd0c0bc76	2002-11-05 00:00:00	SSfrENwVzvQI9JCg:lNZrQolcshFFaCG0/Bjv5w==:BWJfDJbYnixuwg==	m	ci	jKAoMwJhrgp8J8qR:HIuNEEtqHBaYn1YPxrMJSw==:MDTtYpTkUj4=	2040-01-31 00:00:00	biondoangelica2002@gmail.com	IWVg88TUc25C+k6s:kMcsVT9Ab1GEcUO1I2Ci8A==:Wur4	4CUpX/teQpjAV0O/:lh417uk20s/qvKmwbcDjGg==:QGD0	5CBgLwneNuEsC9cl:Su81CANJMgCezKYhUjlGYA==:LRK9	KJ00YY50Yg0quoAZ:rApaYr1owyab07qIyGlV6A==:Nj47	oYXMeKH5aijMdKVG:i4IaoJY/d0qzeXWyANhH5Q==:E94=	attivo	2026	contanti	t	f	f	\N	2026-09-24 16:56:55.064	2026-09-29 20:35:27.83	\N	\N	\N	MEMBER	\N
+\.
+
+
+--
+-- Data for Name: NewsletterSubscriber; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
 --
 
 COPY public."NewsletterSubscriber" (id, email, "createdAt") FROM stdin;
@@ -455,7 +634,15 @@ COPY public."NewsletterSubscriber" (id, email, "createdAt") FROM stdin;
 
 
 --
--- Data for Name: Product; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: OtpCode; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
+--
+
+COPY public."OtpCode" (id, email, code, "expiresAt", "usedAt", "createdAt") FROM stdin;
+\.
+
+
+--
+-- Data for Name: Product; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
 --
 
 COPY public."Product" (id, title, description, category, author, price, "originalPrice", "isNew", images, "createdAt", "updatedAt") FROM stdin;
@@ -463,41 +650,48 @@ COPY public."Product" (id, title, description, category, author, price, "origina
 
 
 --
--- Data for Name: Project; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: Project; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
 --
 
-COPY public."Project" (id, title, description, category, status, images, "createdAt", "updatedAt") FROM stdin;
+COPY public."Project" (id, title, description, category, status, images, cover, "createdAt", "updatedAt") FROM stdin;
+ffccabfd-d445-4885-9f61-cc9c1eda09b8	proggetto utile	descrizione	sociale	ongoing	{https://d352fqmooqp9ew.cloudfront.net/projects/4ddbb31591bbaa8114e1.webp,https://d352fqmooqp9ew.cloudfront.net/projects/27ee7772308c04be2ce4.webp,https://d352fqmooqp9ew.cloudfront.net/projects/9ade42abc2d05940822a.webp}	https://d352fqmooqp9ew.cloudfront.net/projects/5034601c78286829a1ae.webp	2026-10-03 18:29:25.809	2026-10-03 18:29:25.809
 \.
 
 
 --
--- Data for Name: _prisma_migrations; Type: TABLE DATA; Schema: public; Owner: -
+-- Data for Name: SiteSetting; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
+--
+
+COPY public."SiteSetting" (key, value, "updatedAt") FROM stdin;
+placeholder_page_hero	https://pub-7c471637e38d4bc2914d5ae9b118f8e7.r2.dev/placeholders/1b46dad1afc487122d1e.webp	2026-05-09 10:56:07.318
+placeholder_member	https://pub-7c471637e38d4bc2914d5ae9b118f8e7.r2.dev/placeholders/bbf6f97b796591f314d0.webp	2026-05-09 10:56:17.428
+placeholder_mosaic	https://pub-7c471637e38d4bc2914d5ae9b118f8e7.r2.dev/placeholders/caecc33eb71ec1d8275e.webp	2026-05-09 10:56:22.068
+\.
+
+
+--
+-- Data for Name: _prisma_migrations; Type: TABLE DATA; Schema: public; Owner: robertalexandruneagu
 --
 
 COPY public._prisma_migrations (id, checksum, finished_at, migration_name, logs, rolled_back_at, started_at, applied_steps_count) FROM stdin;
-deaf08e6-8713-480f-a8ae-609255ccb4f9	39aeee020adf66b6fb46d619464af1115e0d7a960cce8480e7a5ef0ee1a10107	2026-05-01 13:23:37.466854+02	20260501112337_init	\N	\N	2026-05-01 13:23:37.452852+02	1
-3751396d-6fc3-4ae6-b69a-7780a93da892	882d45afb7343f61264abc9dd5094c8eae73a11045efe7aa2873f83e84055203	2026-05-01 14:33:55.132644+02	20260501123355_add_roles_and_invites	\N	\N	2026-05-01 14:33:55.125361+02	1
+723dd648-c8f8-4a8c-9c12-ba368dcba556	8ffa925c010e31fe4ff9ceba5cede58bb91035e86a040c387a3a5d31eec90b3a	2026-05-09 12:21:42.33251+02	20260509102142_init	\N	\N	2026-05-09 12:21:42.315645+02	1
+b3057d27-c31e-4b60-bc14-f0775f03c53c	4bec09673871ca2b6abec34a4f1342d274ef825f8d474f3e153a8412b139aa53	2026-05-09 12:41:19.732319+02	20260509104119_link_member_admin	\N	\N	2026-05-09 12:41:19.721529+02	1
+d6ef96d1-e422-4161-8cbc-210533194b17	ed0599eb3eb85a590bb0fab79ebd059f7086a01d4849f966fd658d26778c55c3	2026-05-09 13:09:49.182237+02	20260509110949_add_profile_image	\N	\N	2026-05-09 13:09:49.180627+02	1
+3015abd6-5a97-4ea1-bed7-02753ba0eb1f	1d171bc23b4a501c5c4481c4237f79f11b6adde56003536283f4e2065de4abf4	2026-05-09 13:33:02.253699+02	20260509113302_add_member_profile_image	\N	\N	2026-05-09 13:33:02.252261+02	1
+02fff6da-406c-4807-997c-d026b9385f83	42fc17a918064a0c9af693ac8d9f3bf90adcc8b9dfbbc3f570f2d40b760834f8	2026-09-12 13:51:33.328277+02	20260912115133_unify_member_roles	\N	\N	2026-09-12 13:51:33.302968+02	1
+3d62a22d-a840-485c-9f7b-540810764104	eb54fcb37ddb838da0703a70ec37d3356822e8212fdebaa176cdd1c91080c479	2026-09-12 14:40:38.864303+02	20260912124038_add_page_permissions	\N	\N	2026-09-12 14:40:38.862843+02	1
+0f96a1ab-fac0-4a97-8411-de060ecdf367	06428f4832c5ef3d6a3871c26b214bd9a77db0454a191ffa6bd11f52120528c5	2026-09-25 15:48:52.691151+02	20260925134852_add_event_rsvp	\N	\N	2026-09-25 15:48:52.685911+02	1
+bd994989-314a-443d-8028-9da7f64d9ec8	07f2b7410b0976bf5cbc7713fdcb35dab9633304bcc8d675ed8b34897b3ff90c	2026-09-26 13:51:00.902114+02	20260926115100_add_documents	\N	\N	2026-09-26 13:51:00.896894+02	1
+d97b70bf-3ca6-45ae-a7b8-ddad99a9bcc2	9402996082c43f74e8266a3bbdb68e436dae8d21540998dc45d0277d403996c2	2026-09-26 16:05:49.019192+02	20260926140549_add_event_photo	\N	\N	2026-09-26 16:05:49.013314+02	1
+66322bf7-ff25-4dc6-b1b0-1669b8080d80	707c4810a6eee3aeb5eed616961873b6ad71cc606c65d3f0564910897f477d84	2026-09-26 19:05:43.861401+02	20260926170543_add_uploader_fields_to_event_photo	\N	\N	2026-09-26 19:05:43.859057+02	1
+87a0e9dc-7302-41f7-9d52-d7f7a80655bb	668987e4dbda79b7478574c162b18b8463891550ebeaa5de84d134431ff25da7	2026-09-28 18:55:53.009325+02	20260928165553_add_upload_token_to_event	\N	\N	2026-09-28 18:55:53.007132+02	1
+583d7962-889d-4c02-b0e0-b55fa919e024	58e4594166f1f33166479665841684db90d76f3d0d6b9e272cff471c6882c517	2026-10-03 15:06:13.738851+02	20261003130613_add_booking_and_capacity	\N	\N	2026-10-03 15:06:13.734283+02	1
+7ccb110c-739d-46c5-b93c-ecd7d7f3bc70	2d8ecdb76d5465c4ae39d4bf8ae579f2b0dd5f8f14bfa90cfa96ed24f62b126c	2026-10-03 16:22:56.810248+02	20261003142256_add_event_access_type	\N	\N	2026-10-03 16:22:56.808583+02	1
 \.
 
 
 --
--- Name: AdminInvite AdminInvite_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public."AdminInvite"
-    ADD CONSTRAINT "AdminInvite_pkey" PRIMARY KEY (id);
-
-
---
--- Name: AdminUser AdminUser_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public."AdminUser"
-    ADD CONSTRAINT "AdminUser_pkey" PRIMARY KEY (id);
-
-
---
--- Name: Article Article_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: Article Article_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
 ALTER TABLE ONLY public."Article"
@@ -505,7 +699,15 @@ ALTER TABLE ONLY public."Article"
 
 
 --
--- Name: ContactMessage ContactMessage_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: Booking Booking_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
+--
+
+ALTER TABLE ONLY public."Booking"
+    ADD CONSTRAINT "Booking_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: ContactMessage ContactMessage_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
 ALTER TABLE ONLY public."ContactMessage"
@@ -513,7 +715,15 @@ ALTER TABLE ONLY public."ContactMessage"
 
 
 --
--- Name: Donation Donation_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: Document Document_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
+--
+
+ALTER TABLE ONLY public."Document"
+    ADD CONSTRAINT "Document_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Donation Donation_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
 ALTER TABLE ONLY public."Donation"
@@ -521,7 +731,23 @@ ALTER TABLE ONLY public."Donation"
 
 
 --
--- Name: Event Event_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: EventPhoto EventPhoto_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
+--
+
+ALTER TABLE ONLY public."EventPhoto"
+    ADD CONSTRAINT "EventPhoto_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: EventRsvp EventRsvp_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
+--
+
+ALTER TABLE ONLY public."EventRsvp"
+    ADD CONSTRAINT "EventRsvp_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Event Event_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
 ALTER TABLE ONLY public."Event"
@@ -529,7 +755,7 @@ ALTER TABLE ONLY public."Event"
 
 
 --
--- Name: Guardian Guardian_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: Guardian Guardian_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
 ALTER TABLE ONLY public."Guardian"
@@ -537,7 +763,7 @@ ALTER TABLE ONLY public."Guardian"
 
 
 --
--- Name: Member Member_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: Member Member_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
 ALTER TABLE ONLY public."Member"
@@ -545,7 +771,7 @@ ALTER TABLE ONLY public."Member"
 
 
 --
--- Name: NewsletterSubscriber NewsletterSubscriber_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: NewsletterSubscriber NewsletterSubscriber_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
 ALTER TABLE ONLY public."NewsletterSubscriber"
@@ -553,7 +779,15 @@ ALTER TABLE ONLY public."NewsletterSubscriber"
 
 
 --
--- Name: Product Product_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: OtpCode OtpCode_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
+--
+
+ALTER TABLE ONLY public."OtpCode"
+    ADD CONSTRAINT "OtpCode_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Product Product_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
 ALTER TABLE ONLY public."Product"
@@ -561,7 +795,7 @@ ALTER TABLE ONLY public."Product"
 
 
 --
--- Name: Project Project_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: Project Project_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
 ALTER TABLE ONLY public."Project"
@@ -569,7 +803,15 @@ ALTER TABLE ONLY public."Project"
 
 
 --
--- Name: _prisma_migrations _prisma_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: SiteSetting SiteSetting_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
+--
+
+ALTER TABLE ONLY public."SiteSetting"
+    ADD CONSTRAINT "SiteSetting_pkey" PRIMARY KEY (key);
+
+
+--
+-- Name: _prisma_migrations _prisma_migrations_pkey; Type: CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
 ALTER TABLE ONLY public._prisma_migrations
@@ -577,57 +819,57 @@ ALTER TABLE ONLY public._prisma_migrations
 
 
 --
--- Name: AdminInvite_token_key; Type: INDEX; Schema: public; Owner: -
+-- Name: Booking_cancelToken_key; Type: INDEX; Schema: public; Owner: robertalexandruneagu
 --
 
-CREATE UNIQUE INDEX "AdminInvite_token_key" ON public."AdminInvite" USING btree (token);
-
-
---
--- Name: AdminUser_email_key; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX "AdminUser_email_key" ON public."AdminUser" USING btree (email);
+CREATE UNIQUE INDEX "Booking_cancelToken_key" ON public."Booking" USING btree ("cancelToken");
 
 
 --
--- Name: Event_slug_key; Type: INDEX; Schema: public; Owner: -
+-- Name: EventRsvp_eventId_email_key; Type: INDEX; Schema: public; Owner: robertalexandruneagu
+--
+
+CREATE UNIQUE INDEX "EventRsvp_eventId_email_key" ON public."EventRsvp" USING btree ("eventId", email);
+
+
+--
+-- Name: Event_slug_key; Type: INDEX; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE UNIQUE INDEX "Event_slug_key" ON public."Event" USING btree (slug);
 
 
 --
--- Name: Guardian_memberId_key; Type: INDEX; Schema: public; Owner: -
+-- Name: Guardian_memberId_key; Type: INDEX; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE UNIQUE INDEX "Guardian_memberId_key" ON public."Guardian" USING btree ("memberId");
 
 
 --
--- Name: Member_fiscalCode_membershipYear_key; Type: INDEX; Schema: public; Owner: -
+-- Name: Member_fiscalCodeHash_membershipYear_key; Type: INDEX; Schema: public; Owner: robertalexandruneagu
 --
 
-CREATE UNIQUE INDEX "Member_fiscalCode_membershipYear_key" ON public."Member" USING btree ("fiscalCode", "membershipYear");
+CREATE UNIQUE INDEX "Member_fiscalCodeHash_membershipYear_key" ON public."Member" USING btree ("fiscalCodeHash", "membershipYear");
 
 
 --
--- Name: NewsletterSubscriber_email_key; Type: INDEX; Schema: public; Owner: -
+-- Name: NewsletterSubscriber_email_key; Type: INDEX; Schema: public; Owner: robertalexandruneagu
 --
 
 CREATE UNIQUE INDEX "NewsletterSubscriber_email_key" ON public."NewsletterSubscriber" USING btree (email);
 
 
 --
--- Name: AdminInvite AdminInvite_createdById_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: Booking Booking_eventId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
-ALTER TABLE ONLY public."AdminInvite"
-    ADD CONSTRAINT "AdminInvite_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES public."AdminUser"(id) ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE ONLY public."Booking"
+    ADD CONSTRAINT "Booking_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES public."Event"(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
--- Name: Donation Donation_memberId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: Donation Donation_memberId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
 ALTER TABLE ONLY public."Donation"
@@ -635,7 +877,23 @@ ALTER TABLE ONLY public."Donation"
 
 
 --
--- Name: Guardian Guardian_memberId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: EventPhoto EventPhoto_eventId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: robertalexandruneagu
+--
+
+ALTER TABLE ONLY public."EventPhoto"
+    ADD CONSTRAINT "EventPhoto_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES public."Event"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: EventRsvp EventRsvp_eventId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: robertalexandruneagu
+--
+
+ALTER TABLE ONLY public."EventRsvp"
+    ADD CONSTRAINT "EventRsvp_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES public."Event"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: Guardian Guardian_memberId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: robertalexandruneagu
 --
 
 ALTER TABLE ONLY public."Guardian"
@@ -643,8 +901,15 @@ ALTER TABLE ONLY public."Guardian"
 
 
 --
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: robertalexandruneagu
+--
+
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+
+
+--
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ib1nGeAS2UfGDBC9fL8I4KIDmKdaf0KeYtxNpk0DMAdibVPr24uB4APs4Gbnkju
+\unrestrict Kob5k76DexBqRzmAeeCQXLf9fR6kljdod5MoNAFPR2UGIU5J5unAnScYcKg7ngD
 

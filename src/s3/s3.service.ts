@@ -5,6 +5,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
 export class S3Service {
@@ -70,5 +71,14 @@ export class S3Service {
 
   async deleteMany(urls: string[]): Promise<void> {
     await Promise.all(urls.map((u) => this.delete(u)));
+  }
+
+  async presignedPut(key: string, contentType: string, expiresIn = 300): Promise<string> {
+    const cmd = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      ContentType: contentType,
+    });
+    return getSignedUrl(this.client as any, cmd, { expiresIn });
   }
 }

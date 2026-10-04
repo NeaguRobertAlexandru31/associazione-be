@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Logger,
   Post,
@@ -173,6 +174,54 @@ export class UploadsController {
     const key = `documents/${randomBytes(10).toString('hex')}.${ext}`;
     const url = await this.r2.upload(key, file.buffer, file.mimetype);
     return { url, fileName: file.originalname, fileSize: file.size };
+  }
+
+  /** Genera presigned URL per upload diretto su S3 (bypass 10MB API Gateway limit) */
+  @Post('presign')
+  @UseGuards(AdminGuard)
+  async presign(
+    @Body() body: { files: { name: string; type: string }[]; folder: string },
+  ) {
+    const allowed = ['events', 'articles', 'projects', 'settings', 'placeholders'];
+    const folder = allowed.includes(body.folder) ? body.folder : 'events';
+    const presignedUrls = await Promise.all(
+      (body.files ?? []).slice(0, 10).map(async (f) => {
+        const ext = f.name.split('.').pop()?.toLowerCase() ?? 'jpg';
+        const contentType = f.type || 'image/jpeg';
+        const key = `${folder}-raw/${randomBytes(10).toString('hex')}.${ext}`;
+        const uploadUrl = await this.r2.presignedPut(key, contentType, 600);
+        return { uploadUrl, key };
+      }),
+    );
+    return { presignedUrls };
+  }
+
+  /** Processa file raw già caricati su S3: resize + webp + watermark → percorso definitivo */
+  @Post('process')
+  @UseGuards(AdminGuard)
+  async process(
+    @Body() body: { keys: string[]; folder: string; watermark?: boolean },
+  ) {
+    const allowed = ['events', 'articles', 'projects', 'settings', 'placeholders'];
+    const folder = allowed.includes(body.folder) ? body.folder : 'events';
+    const applyWatermark = body.watermark ?? false;
+
+    const urls = await Promise.all(
+      (body.keys ?? []).map(async (key) => {
+        const rawBuf = await this.r2.download(key);
+        let buf = await sharp(rawBuf)
+          .rotate()
+          .resize({ width: 1920, withoutEnlargement: true })
+          .webp({ quality: 80 })
+          .toBuffer();
+        if (applyWatermark) buf = await this.watermark.apply(buf);
+        const finalKey = `${folder}/${randomBytes(10).toString('hex')}.webp`;
+        const url = await this.r2.upload(finalKey, buf);
+        await this.r2.delete(key).catch(() => {});
+        return url;
+      }),
+    );
+    return { urls };
   }
 
   @Post('rewatermark')

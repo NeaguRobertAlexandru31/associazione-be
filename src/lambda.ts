@@ -15,21 +15,23 @@ import { EventsService } from './events/events.service';
 let cachedHandler: Handler;
 
 async function loadSecretsIntoEnv(): Promise<void> {
-  const dbSecretArn = process.env.DB_SECRET_ARN;
-  if (!dbSecretArn || process.env.DATABASE_URL) return;
+  const appSecretArn = process.env.APP_SECRET_ARN;
+  if (!appSecretArn) return;
 
   const client = new SecretsManagerClient({
     region: process.env.AWS_REGION_NAME ?? 'eu-central-1',
   });
   const { SecretString } = await client.send(
-    new GetSecretValueCommand({ SecretId: dbSecretArn }),
+    new GetSecretValueCommand({ SecretId: appSecretArn }),
   );
   if (!SecretString) return;
 
-  const { username, password, host, port, dbname } = JSON.parse(SecretString);
-  const dbHost = process.env.DB_HOST ?? host;
-  const dbName = process.env.DB_NAME ?? dbname;
-  process.env.DATABASE_URL = `postgresql://${username}:${encodeURIComponent(password)}@${dbHost}:${port ?? 5432}/${dbName}?sslmode=no-verify`;
+  const secrets = JSON.parse(SecretString);
+  for (const [key, value] of Object.entries(secrets)) {
+    if (key !== '_placeholder' && value && !process.env[key]) {
+      process.env[key] = value as string;
+    }
+  }
 }
 
 async function bootstrap(): Promise<Handler> {
