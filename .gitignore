@@ -2,4 +2,11 @@ node_modules
 dist
 lambda-bundle
 .env
+.env.prod
+.env.staging
 src/generated/
+
+# Infra CDK
+infra/node_modules
+infra/dist
+infra/cdk.out

@@ -1,0 +1,261 @@
+<mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1600" math="0" shadow="0">
+  <root>
+    <mxCell id="0" />
+    <mxCell id="1" parent="0" />
+
+    <!-- TITOLO -->
+    <mxCell id="title" value="Associazione — Flussi di Business" style="text;html=1;align=center;fontSize=22;fontStyle=1;fontColor=#000000;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+      <mxGeometry x="400" y="20" width="1200" height="40" as="geometry" />
+    </mxCell>
+
+    <!-- ════════════════════════════════════════════════════
+         COLONNA 1 — REGISTRAZIONE SOCIO
+    ════════════════════════════════════════════════════ -->
+    <mxCell id="col1_title" value="REGISTRAZIONE SOCIO" style="text;html=1;align=center;fontSize=13;fontStyle=1;fontColor=#000000;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+      <mxGeometry x="40" y="80" width="220" height="25" as="geometry" />
+    </mxCell>
+
+    <mxCell id="r1" value="Utente compila form iscrizione" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="40" y="120" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="r2" value="Backend crea membro (stato: PENDING)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="40" y="200" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="r3" value="Email: Welcome al nuovo socio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="40" y="280" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="r4" value="Telegram Admin: nuova iscrizione" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="40" y="360" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="r5" value="Admin approva / rifiuta da gestionale" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="40" y="440" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="r6" value="Email: Approvazione o Rifiuto al socio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="40" y="520" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="r7" value="Stripe: Checkout pagamento quota" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="40" y="600" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="r8" value="Webhook Stripe: pagamento OK" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="40" y="680" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="r9" value="Membro attivato (stato: ACTIVE)" style="rounded=1;whiteShape=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="40" y="760" width="220" height="45" as="geometry" />
+    </mxCell>
+
+    <!-- frecce colonna 1 -->
+    <mxCell id="er1r2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="r1" target="r2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="er2r3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="r2" target="r3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="er2r4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="r2" target="r4" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="er4r5" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="r4" target="r5" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="er5r6" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="r5" target="r6" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="er6r7" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="r6" target="r7" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="er7r8" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="r7" target="r8" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="er8r9" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="r8" target="r9" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- ════════════════════════════════════════════════════
+         COLONNA 2 — EVENTO + PRENOTAZIONE
+    ════════════════════════════════════════════════════ -->
+    <mxCell id="col2_title" value="EVENTO + PRENOTAZIONE" style="text;html=1;align=center;fontSize=13;fontStyle=1;fontColor=#000000;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+      <mxGeometry x="320" y="80" width="220" height="25" as="geometry" />
+    </mxCell>
+
+    <mxCell id="e1" value="Admin crea evento (titolo, data, posti, prezzo)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="320" y="120" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="e2" value="Carica immagine copertina → S3 + CDN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="320" y="200" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="e3" value="Telegram canale: notifica nuovo evento" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="320" y="280" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="e4" value="Utente prenota posto (BookingsService)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="320" y="360" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="e5" value="Posto disponibile?&#xa;↓ SÌ → confermato&#xa;↓ NO → waitlist" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="320" y="440" width="220" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="e6" value="Genera QR Code biglietto → upload S3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="320" y="530" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="e7" value="Email: conferma prenotazione con QR" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="320" y="610" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="e8" value="Admin scansiona QR col Bot Telegram (/checkqr)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="320" y="690" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="e9" value="Bot risponde: nome, validità biglietto, check-in OK" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="320" y="770" width="220" height="45" as="geometry" />
+    </mxCell>
+
+    <!-- frecce colonna 2 -->
+    <mxCell id="ee1e2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="e1" target="e2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ee1e3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="e1" target="e3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ee3e4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="e3" target="e4" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ee4e5" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="e4" target="e5" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ee5e6" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="e5" target="e6" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ee6e7" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="e6" target="e7" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ee7e8" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="e7" target="e8" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ee8e9" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="e8" target="e9" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- ════════════════════════════════════════════════════
+         COLONNA 3 — FOTO EVENTO
+    ════════════════════════════════════════════════════ -->
+    <mxCell id="col3_title" value="FOTO EVENTO" style="text;html=1;align=center;fontSize=13;fontStyle=1;fontColor=#000000;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+      <mxGeometry x="600" y="80" width="220" height="25" as="geometry" />
+    </mxCell>
+
+    <mxCell id="p1" value="Socio carica foto dell'evento" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="600" y="120" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="p2" value="Backend applica watermark (sharp)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="600" y="200" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="p3" value="Upload foto su S3 → URL CDN pubblica" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="600" y="280" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="p4" value="Email admin: alert nuova foto caricata" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="600" y="360" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="p5" value="Email socio: ringraziamento foto" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="600" y="440" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="p6" value="Foto visibile nella gallery pubblica" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="600" y="520" width="220" height="45" as="geometry" />
+    </mxCell>
+
+    <!-- frecce colonna 3 -->
+    <mxCell id="ep1p2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="p1" target="p2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ep2p3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="p2" target="p3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ep3p4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="p3" target="p4" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ep3p5" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="p3" target="p5" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ep5p6" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="p5" target="p6" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- ════════════════════════════════════════════════════
+         COLONNA 4 — ARTICOLI / PROGETTI
+    ════════════════════════════════════════════════════ -->
+    <mxCell id="col4_title" value="ARTICOLI / PROGETTI" style="text;html=1;align=center;fontSize=13;fontStyle=1;fontColor=#000000;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+      <mxGeometry x="880" y="80" width="220" height="25" as="geometry" />
+    </mxCell>
+
+    <mxCell id="a1" value="Admin pubblica articolo o progetto" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="880" y="120" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="a2" value="Carica immagine copertina → S3 + CDN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="880" y="200" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="a3" value="Telegram canale: notifica nuova pubblicazione" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="880" y="280" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="a4" value="Articolo / progetto visibile sul sito pubblico" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="880" y="360" width="220" height="45" as="geometry" />
+    </mxCell>
+
+    <!-- frecce colonna 4 -->
+    <mxCell id="ea1a2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="a1" target="a2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ea1a3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="a1" target="a3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ea3a4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="a3" target="a4" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- ════════════════════════════════════════════════════
+         COLONNA 5 — DONAZIONE
+    ════════════════════════════════════════════════════ -->
+    <mxCell id="col5_title" value="DONAZIONE" style="text;html=1;align=center;fontSize=13;fontStyle=1;fontColor=#000000;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+      <mxGeometry x="1160" y="80" width="220" height="25" as="geometry" />
+    </mxCell>
+
+    <mxCell id="d1" value="Visitatore clicca Dona" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1160" y="120" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="d2" value="Stripe Checkout (una tantum / ricorrente)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1160" y="200" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="d3" value="Webhook Stripe: checkout.session.completed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1160" y="280" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="d4" value="Email donatore: ricevuta donazione" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1160" y="360" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="d5" value="Finance record salvato in DB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1160" y="440" width="220" height="45" as="geometry" />
+    </mxCell>
+
+    <!-- frecce colonna 5 -->
+    <mxCell id="ed1d2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="d1" target="d2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ed2d3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="d2" target="d3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ed3d4" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="d3" target="d4" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ed3d5" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="d3" target="d5" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- ════════════════════════════════════════════════════
+         COLONNA 6 — CONTATTO / DOCUMENTI
+    ════════════════════════════════════════════════════ -->
+    <mxCell id="col6_title" value="CONTATTO / DOCUMENTI" style="text;html=1;align=center;fontSize=13;fontStyle=1;fontColor=#000000;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+      <mxGeometry x="1440" y="80" width="220" height="25" as="geometry" />
+    </mxCell>
+
+    <mxCell id="c1" value="Visitatore invia messaggio di contatto" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1440" y="120" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="c2" value="Admin riceve email + risponde dal gestionale" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1440" y="200" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="c3" value="Email: risposta inviata all'utente (SES)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1440" y="280" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="c4" value="Admin carica documento (statuto, verbali…)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1440" y="380" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="c5" value="Documento caricato su S3 → link CDN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1440" y="460" width="220" height="45" as="geometry" />
+    </mxCell>
+    <mxCell id="c6" value="Documento visibile ai soci autenticati" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1440" y="540" width="220" height="45" as="geometry" />
+    </mxCell>
+
+    <!-- frecce colonna 6 -->
+    <mxCell id="ec1c2" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="c1" target="c2" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ec2c3" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="c2" target="c3" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ec4c5" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="c4" target="c5" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+    <mxCell id="ec5c6" style="edgeStyle=orthogonalEdgeStyle;strokeColor=#000000;" edge="1" source="c5" target="c6" parent="1"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+    <!-- ════════════════════════════════════════════════════
+         LAYER INFRASTRUTTURA (in basso)
+    ════════════════════════════════════════════════════ -->
+    <mxCell id="infra_title" value="INFRASTRUTTURA" style="text;html=1;align=center;fontSize=13;fontStyle=1;fontColor=#000000;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+      <mxGeometry x="460" y="900" width="1000" height="25" as="geometry" />
+    </mxCell>
+
+    <mxCell id="i_fe" value="Angular SPA&#xa;(S3 + CloudFront)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="120" y="940" width="160" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="i_cf" value="CloudFront&#xa;(routing /api/*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="310" y="940" width="160" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="i_lambda" value="Lambda + API GW&#xa;NestJS (Node 22)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="500" y="940" width="160" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="i_db" value="Neon PostgreSQL&#xa;(Prisma 7)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="690" y="940" width="160" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="i_s3" value="S3 + CloudFront CDN&#xa;(immagini, doc, QR)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="880" y="940" width="160" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="i_ses" value="AWS SES&#xa;(email transazionali)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1070" y="940" width="160" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="i_stripe" value="Stripe&#xa;(pagamenti)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1260" y="940" width="160" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="i_tg" value="Telegram Bot&#xa;(notifiche admin)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1450" y="940" width="160" height="55" as="geometry" />
+    </mxCell>
+    <mxCell id="i_secrets" value="Secrets Manager&#xa;(JWT, chiavi, env)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;fontColor=#000000;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+      <mxGeometry x="1640" y="940" width="160" height="55" as="geometry" />
+    </mxCell>
+
+    <!-- linea separatrice -->
+    <mxCell id="sep" value="" style="line;strokeColor=#000000;fillColor=none;" vertex="1" parent="1">
+      <mxGeometry x="40" y="890" width="1800" height="10" as="geometry" />
+    </mxCell>
+
+  </root>
+</mxGraphModel>
