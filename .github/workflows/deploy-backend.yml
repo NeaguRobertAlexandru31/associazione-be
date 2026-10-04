@@ -9,6 +9,7 @@ on:
       - 'prisma/**'
       - 'infra/**'
       - 'package.json'
+      - 'tsconfig*.json'
       - 'scripts/**'
       - '.github/workflows/deploy-backend.yml'
 
