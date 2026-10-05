@@ -44,6 +44,10 @@ export class EventPhotosService {
     });
     if (!event) throw new NotFoundException('Evento non trovato');
 
+    const today = new Date().toISOString().slice(0, 10);
+    const eventDay = new Date(event.date).toISOString().slice(0, 10);
+    if (eventDay > today) throw new BadRequestException('Le foto possono essere caricate solo dal giorno dell\'evento');
+
     // Restituisce il token già salvato se ancora valido
     if (event.uploadToken && event.uploadUrl) {
       try {
@@ -84,9 +88,13 @@ export class EventPhotosService {
 
     if (!uploaderName?.trim()) throw new BadRequestException('Il nome è obbligatorio');
 
-    const event = await this.prisma.event.findUnique({ where: { slug }, select: { id: true } });
+    const event = await this.prisma.event.findUnique({ where: { slug }, select: { id: true, date: true } });
     if (!event) throw new NotFoundException('Evento non trovato');
     if (event.id !== payload.sub) throw new UnauthorizedException('Token non valido per questo evento');
+
+    const today = new Date().toISOString().slice(0, 10);
+    const eventDay = new Date(event.date).toISOString().slice(0, 10);
+    if (eventDay > today) throw new BadRequestException('Le foto possono essere caricate solo dal giorno dell\'evento');
 
     const totalExisting = await this.prisma.eventPhoto.count({ where: { eventId: event.id } });
     if (totalExisting >= PHOTO_LIMIT_PER_EVENT)
