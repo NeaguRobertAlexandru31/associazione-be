@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from '../s3/s3.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { CreateEventDto, EventAccessType } from './dto/create-event.dto';
+import { UpdateEventDto } from './dto/update-event.dto';
 
 function slugify(text: string): string {
   return text
@@ -122,6 +123,31 @@ export class EventsService {
       .catch(err => this.logger.error('Telegram notify failed', err));
 
     return event;
+  }
+
+  async update(id: string, dto: UpdateEventDto) {
+    const existing = await this.prisma.event.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Evento non trovato');
+
+    const accessType = dto.accessType ?? existing.accessType;
+    const hasCapacity = accessType === EventAccessType.limited;
+
+    return this.prisma.event.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.date !== undefined && { date: new Date(dto.date) }),
+        ...(dto.time !== undefined && { time: dto.time }),
+        ...(dto.location !== undefined && { location: dto.location }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.images !== undefined && { images: dto.images }),
+        ...(dto.cover !== undefined && { cover: dto.cover }),
+        ...(dto.accessType !== undefined && { accessType, hasCapacity }),
+        ...(hasCapacity && dto.capacity !== undefined && { capacity: dto.capacity }),
+        ...(!hasCapacity && { capacity: null }),
+      },
+      select: EVENT_SELECT,
+    });
   }
 
   async delete(id: string) {
