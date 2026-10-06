@@ -20,6 +20,7 @@ import { RsvpModule } from './rsvp/rsvp.module';
 import { DocumentsModule } from './documents/documents.module';
 import { EventPhotosModule } from './event-photos/event-photos.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { DocScanModule } from './doc-scan/doc-scan.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { BookingsModule } from './bookings/bookings.module';
     DocumentsModule,
     EventPhotosModule,
     BookingsModule,
+    DocScanModule,
   ],
   controllers: [AppController],
   providers: [AppService],
