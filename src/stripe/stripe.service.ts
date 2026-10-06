@@ -36,7 +36,7 @@ export class StripeService {
             currency: 'eur',
             unit_amount: amount,
             product_data: {
-              name: `Tessera ACR ${opts.year} — ${opts.firstName} ${opts.lastName}`,
+              name: `Tessera APS Marama ${opts.year} — ${opts.firstName} ${opts.lastName}`,
               description: `Quota associativa categoria ${opts.category}`,
             },
           },
@@ -65,7 +65,7 @@ export class StripeService {
         currency: 'eur',
         unit_amount: Math.round(opts.amount * 100),
         recurring: { interval: 'month' },
-        product_data: { name: 'Donazione mensile ACR' },
+        product_data: { name: 'Donazione mensile APS Marama' },
       });
 
       const session = await this.stripe.checkout.sessions.create({
@@ -89,8 +89,8 @@ export class StripeService {
             currency: 'eur',
             unit_amount: Math.round(opts.amount * 100),
             product_data: {
-              name: 'Donazione ACR',
-              description: 'Associazione Culturale Rumena — Milano',
+              name: 'Donazione APS Marama',
+              description: 'APS Marama — Pinerolo (TO)',
             },
           },
         },

@@ -23,7 +23,7 @@ export class MailService {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Associazione Culturale Rumena</title>
+  <title>APS Marama</title>
 </head>
 <body style="margin:0;padding:0;background:#f4f3fc;font-family:'Inter',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3fc;padding:40px 16px;">
@@ -35,9 +35,9 @@ export class MailService {
           <tr>
             <td align="center" style="padding-bottom:24px;">
               <div style="display:inline-block;background:#002068;border-radius:16px;padding:16px 28px;">
-                <span style="color:#ffffff;font-size:22px;font-weight:700;letter-spacing:2px;">A.C.R.</span>
+                <span style="color:#ffffff;font-size:22px;font-weight:700;letter-spacing:2px;">APS Marama</span>
               </div>
-              <div style="color:#444653;font-size:13px;margin-top:8px;letter-spacing:1px;">ASSOCIAZIONE CULTURALE RUMENA</div>
+              <div style="color:#444653;font-size:13px;margin-top:8px;letter-spacing:1px;">APS MARAMA</div>
             </td>
           </tr>
 
@@ -52,11 +52,11 @@ export class MailService {
           <tr>
             <td align="center" style="padding-top:28px;">
               <p style="color:#444653;font-size:12px;margin:0;">
-                Hai ricevuto questa email perché ti sei iscritto/a all'Associazione Culturale Rumena.<br/>
+                Hai ricevuto questa email perché ti sei iscritto/a all'APS Marama.<br/>
                 Per assistenza scrivi a <a href="mailto:${this.from}" style="color:#002068;">${this.from}</a>
               </p>
               <p style="color:#c4c5d5;font-size:11px;margin:12px 0 0;">
-                © ${new Date().getFullYear()} Associazione Culturale Rumena — Milano
+                © ${new Date().getFullYear()} APS Marama — Pinerolo (TO)
               </p>
             </td>
           </tr>
@@ -89,7 +89,7 @@ export class MailService {
         Benvenuto/a, ${opts.firstName}!
       </h1>
       <p style="color:#444653;font-size:14px;margin:0 0 24px;line-height:1.6;">
-        La tua iscrizione è stata confermata. Sei ufficialmente socio/a dell'Associazione Culturale Rumena per l'anno <strong>${opts.year}</strong>.
+        La tua iscrizione è stata confermata. Sei ufficialmente socio/a dell'APS Marama per l'anno <strong>${opts.year}</strong>.
       </p>
 
       <!-- Tessera info -->
@@ -133,17 +133,17 @@ export class MailService {
       </p>
     `);
 
-    const text = `Benvenuto/a ${opts.firstName}!\n\nLa tua iscrizione all'ACR per l'anno ${opts.year} è confermata.\n\nCome accedere:\n1. Vai su ${loginUrl}\n2. Inserisci la tua email: ${opts.email}\n3. Clicca "Continua" e imposta la tua password\n\nPer assistenza: ${this.from}`;
+    const text = `Benvenuto/a ${opts.firstName}!\n\nLa tua iscrizione all'APS Marama per l'anno ${opts.year} è confermata.\n\nCome accedere:\n1. Vai su ${loginUrl}\n2. Inserisci la tua email: ${opts.email}\n3. Clicca "Continua" e imposta la tua password\n\nPer assistenza: ${this.from}`;
 
     await this.client.send(
       new SendEmailCommand({
-        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Source: `APS Marama <${this.from}>`,
         Destination: {
           ToAddresses: [`${opts.firstName} ${opts.lastName} <${opts.email}>`],
         },
         Message: {
           Subject: {
-            Data: `Benvenuto/a nell'ACR — Tessera ${opts.year}`,
+            Data: `Benvenuto/a nell'APS Marama — Tessera ${opts.year}`,
             Charset: 'UTF-8',
           },
           Body: {
@@ -175,7 +175,7 @@ export class MailService {
         Iscrizione approvata!
       </h1>
       <p style="color:#444653;font-size:14px;margin:0 0 24px;line-height:1.6;">
-        La tua iscrizione all'Associazione Culturale Rumena per l'anno <strong>${opts.year}</strong> è stata <strong>approvata</strong>. Sei ufficialmente socio/a attivo/a!
+        La tua iscrizione all'APS Marama per l'anno <strong>${opts.year}</strong> è stata <strong>approvata</strong>. Sei ufficialmente socio/a attivo/a!
       </p>
 
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3fc;border-radius:12px;padding:20px;margin-bottom:28px;">
@@ -203,17 +203,17 @@ export class MailService {
       </table>
     `);
 
-    const text = `La tua iscrizione all'ACR per l'anno ${opts.year} è stata approvata!\n\nAccedi alla tua area personale: ${loginUrl}\n\nPer assistenza: ${this.from}`;
+    const text = `La tua iscrizione all'APS Marama per l'anno ${opts.year} è stata approvata!\n\nAccedi alla tua area personale: ${loginUrl}\n\nPer assistenza: ${this.from}`;
 
     await this.client.send(
       new SendEmailCommand({
-        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Source: `APS Marama <${this.from}>`,
         Destination: {
           ToAddresses: [`${opts.firstName} ${opts.lastName} <${opts.email}>`],
         },
         Message: {
           Subject: {
-            Data: `Iscrizione approvata — ACR ${opts.year}`,
+            Data: `Iscrizione approvata — APS Marama ${opts.year}`,
             Charset: 'UTF-8',
           },
           Body: {
@@ -237,7 +237,7 @@ export class MailService {
         Aggiornamento sulla tua iscrizione
       </h1>
       <p style="color:#444653;font-size:14px;margin:0 0 24px;line-height:1.6;">
-        Ci dispiace informarti che la tua richiesta di iscrizione all'Associazione Culturale Rumena per l'anno <strong>${opts.year}</strong> non è stata accettata.
+        Ci dispiace informarti che la tua richiesta di iscrizione all'APS Marama per l'anno <strong>${opts.year}</strong> non è stata accettata.
       </p>
 
       ${
@@ -260,17 +260,17 @@ export class MailService {
       </p>
     `);
 
-    const text = `Gentile ${opts.firstName},\n\nLa tua richiesta di iscrizione all'ACR per l'anno ${opts.year} non è stata accettata.${opts.reason ? `\n\nMotivazione: ${opts.reason}` : ''}\n\nPer chiarimenti scrivi a: ${this.from}`;
+    const text = `Gentile ${opts.firstName},\n\nLa tua richiesta di iscrizione all'APS Marama per l'anno ${opts.year} non è stata accettata.${opts.reason ? `\n\nMotivazione: ${opts.reason}` : ''}\n\nPer chiarimenti scrivi a: ${this.from}`;
 
     await this.client.send(
       new SendEmailCommand({
-        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Source: `APS Marama <${this.from}>`,
         Destination: {
           ToAddresses: [`${opts.firstName} ${opts.lastName} <${opts.email}>`],
         },
         Message: {
           Subject: {
-            Data: `Esito iscrizione ACR ${opts.year}`,
+            Data: `Esito iscrizione APS Marama ${opts.year}`,
             Charset: 'UTF-8',
           },
           Body: {
@@ -300,7 +300,7 @@ export class MailService {
         Grazie per la tua donazione!
       </h1>
       <p style="color:#444653;font-size:14px;margin:0 0 24px;line-height:1.6;">
-        Abbiamo ricevuto la tua donazione all'Associazione Culturale Rumena. Il tuo contributo fa la differenza.
+        Abbiamo ricevuto la tua donazione all'APS Marama. Il tuo contributo fa la differenza.
       </p>
 
       <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3fc;border-radius:12px;padding:20px;margin-bottom:28px;">
@@ -319,11 +319,11 @@ export class MailService {
       </p>
     `);
 
-    const text = `Grazie per la tua donazione di ${amountFmt} (${frequencyLabel}) all'ACR.\n\nConserva questa email come ricevuta.\n\nPer assistenza: ${this.from}`;
+    const text = `Grazie per la tua donazione di ${amountFmt} (${frequencyLabel}) all'APS Marama.\n\nConserva questa email come ricevuta.\n\nPer assistenza: ${this.from}`;
 
     await this.client.send(
       new SendEmailCommand({
-        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Source: `APS Marama <${this.from}>`,
         Destination: { ToAddresses: [`${opts.name} <${opts.email}>`] },
         Message: {
           Subject: {
@@ -392,11 +392,11 @@ export class MailService {
       </table>
     `);
 
-    const text = `Nuova richiesta di iscrizione ACR ${opts.year}\n\nSocio: ${opts.firstName} ${opts.lastName}\nEmail: ${opts.email}\nCategoria: ${categoryLabel[opts.category] ?? opts.category}\nPagamento: ${paymentLabel[opts.paymentMethod] ?? opts.paymentMethod}\n\nGestisci: ${membersUrl}`;
+    const text = `Nuova richiesta di iscrizione APS Marama ${opts.year}\n\nSocio: ${opts.firstName} ${opts.lastName}\nEmail: ${opts.email}\nCategoria: ${categoryLabel[opts.category] ?? opts.category}\nPagamento: ${paymentLabel[opts.paymentMethod] ?? opts.paymentMethod}\n\nGestisci: ${membersUrl}`;
 
     await this.client.send(
       new SendEmailCommand({
-        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Source: `APS Marama <${this.from}>`,
         Destination: { ToAddresses: [opts.adminEmail] },
         Message: {
           Subject: {
@@ -538,7 +538,7 @@ export class MailService {
 
     await this.client.send(
       new SendEmailCommand({
-        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Source: `APS Marama <${this.from}>`,
         Destination: { ToAddresses: [`${booking.name} <${booking.email}>`] },
         Message: {
           Subject: { Data: `Prenotazione confermata — ${event.name}`, Charset: 'UTF-8' },
@@ -592,7 +592,7 @@ export class MailService {
 
     await this.client.send(
       new SendEmailCommand({
-        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Source: `APS Marama <${this.from}>`,
         Destination: { ToAddresses: [`${booking.name} <${booking.email}>`] },
         Message: {
           Subject: { Data: `Lista d'attesa — ${event.name}`, Charset: 'UTF-8' },
@@ -658,7 +658,7 @@ export class MailService {
 
     await this.client.send(
       new SendEmailCommand({
-        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Source: `APS Marama <${this.from}>`,
         Destination: { ToAddresses: [adminEmail] },
         Message: {
           Subject: {
@@ -705,7 +705,7 @@ export class MailService {
           <td>
             <p style="margin:0 0 6px;font-size:12px;color:#444653;letter-spacing:1px;">VUOI FAR PARTE DELLA NOSTRA COMUNITÀ?</p>
             <p style="margin:0 0 12px;font-size:14px;color:#444653;line-height:1.6;">
-              Diventare socio dell'Associazione Culturale Rumena significa partecipare attivamente alla vita culturale, avere accesso a eventi riservati e supportare le nostre iniziative.
+              Diventare socio dell'APS Marama significa partecipare attivamente alla vita culturale, avere accesso a eventi riservati e supportare le nostre iniziative.
             </p>
             <p style="margin:0;font-size:13px;color:#444653;line-height:1.6;">
               La quota annuale è a partire da <strong>€10</strong> per under 26 e <strong>€20</strong> per soci ordinari.
@@ -759,7 +759,7 @@ export class MailService {
 
     await this.client.send(
       new SendEmailCommand({
-        Source: `Associazione Culturale Rumena <${this.from}>`,
+        Source: `APS Marama <${this.from}>`,
         Destination: { ToAddresses: [`${opts.name} <${opts.email}>`] },
         Message: {
           Subject: {

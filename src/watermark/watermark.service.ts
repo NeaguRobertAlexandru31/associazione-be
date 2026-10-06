@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const sharp = require('sharp') as typeof import('sharp');
 
-const LABEL = '© A.C.R.';
+const LABEL = '© APS Marama';
 const FONT_SIZE = 52;
 const PAD_X = 36;
 const PAD_Y = 22;

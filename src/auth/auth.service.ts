@@ -330,7 +330,7 @@ export class AuthService {
       daysLeft: expired ? 0 : daysLeft,
       paymentMethod: member.paymentMethod,
       profileImage: member.profileImage,
-      cardCode: `ACR · ${year} · ${member.id.slice(-4).toUpperCase()}`,
+      cardCode: `APS Marama · ${year} · ${member.id.slice(-4).toUpperCase()}`,
     };
   }
 
