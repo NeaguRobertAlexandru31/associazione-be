@@ -14,13 +14,7 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
-  app.use((req: any, res: any, next: any) => {
-    if (req.path === '/stripe/webhook') {
-      require('express').raw({ type: 'application/json' })(req, res, next);
-    } else {
-      require('express').json({ limit: '20mb' })(req, res, next);
-    }
-  });
+  app.use(require('express').json({ limit: '20mb' }));
   app.use(require('express').urlencoded({ limit: '20mb', extended: true }));
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 

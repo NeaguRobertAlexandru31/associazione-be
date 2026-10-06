@@ -28,6 +28,20 @@ export class RegistrationsService {
     private readonly telegram: TelegramService,
   ) {}
 
+  async checkFiscalCode(fiscalCode: string): Promise<{ exists: boolean }> {
+    const membershipYear = new Date().getFullYear();
+    const fiscalCodeHash = this.enc.hmac(fiscalCode);
+    const duplicate = await this.prisma.member.findFirst({
+      where: {
+        fiscalCodeHash,
+        membershipYear,
+        status: { not: 'rifiutato' },
+        deletedAt: null,
+      },
+    });
+    return { exists: !!duplicate };
+  }
+
   async create(dto: CreateRegistrationDto) {
     const now = new Date();
     const membershipYear = now.getFullYear();

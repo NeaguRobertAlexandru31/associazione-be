@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -8,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../encryption/encryption.service';
 import { MailService } from '../mail/mail.service';
 import { UpdateSocioDto } from './dto/update-socio.dto';
+import { CreateMemberDto } from './dto/create-member.dto';
 
 @Injectable()
 export class MembersService {
@@ -16,6 +18,75 @@ export class MembersService {
     private readonly enc: EncryptionService,
     private readonly mail: MailService,
   ) {}
+
+  async createMember(requestingRole: UserRole, dto: CreateMemberDto) {
+    if (requestingRole !== UserRole.SUPERADMIN)
+      throw new ForbiddenException('Solo il presidente può creare soci');
+
+    const fiscalCodeHash = this.enc.hmac(dto.fiscalCode);
+    const membershipYear = new Date().getFullYear();
+
+    const duplicate = await this.prisma.member.findFirst({
+      where: { fiscalCodeHash, membershipYear, status: { not: 'rifiutato' }, deletedAt: null },
+    });
+    if (duplicate)
+      throw new ConflictException(
+        `Esiste già un'iscrizione attiva per questo codice fiscale nell'anno ${membershipYear}`,
+      );
+
+    const member = await this.prisma.member.create({
+      data: {
+        role: 'MEMBER',
+        isMinor: dto.isMinor,
+        category: dto.category,
+        status: dto.status,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        fiscalCode: this.enc.encrypt(dto.fiscalCode.toUpperCase()),
+        fiscalCodeHash,
+        birthDate: new Date(dto.birthDate),
+        birthPlace: this.enc.encrypt(dto.birthPlace),
+        gender: dto.gender,
+        docType: dto.docType,
+        docNumber: this.enc.encrypt(dto.docNumber),
+        docExpiry: new Date(dto.docExpiry),
+        email: dto.email,
+        phone: this.enc.encrypt(dto.phone),
+        addressStreet: this.enc.encrypt(dto.addressStreet),
+        addressZip: this.enc.encrypt(dto.addressZip),
+        addressCity: this.enc.encrypt(dto.addressCity),
+        addressProvince: this.enc.encrypt(dto.addressProvince),
+        membershipYear,
+        paymentMethod: dto.paymentMethod,
+        privacyBase: dto.privacyBase,
+        privacyNewsletter: dto.privacyNewsletter ?? false,
+        privacyThirdParties: dto.privacyThirdParties ?? false,
+        ...(dto.guardian && {
+          guardian: {
+            create: {
+              firstName: dto.guardian.firstName,
+              lastName: dto.guardian.lastName,
+              fiscalCode: this.enc.encrypt(dto.guardian.fiscalCode.toUpperCase()),
+              fiscalCodeHash: this.enc.hmac(dto.guardian.fiscalCode),
+              relation: dto.guardian.relation,
+              docType: dto.guardian.docType,
+              docNumber: this.enc.encrypt(dto.guardian.docNumber),
+              docExpiry: new Date(dto.guardian.docExpiry),
+            },
+          },
+        }),
+      },
+      include: { guardian: true },
+    });
+
+    const { passwordHash: _, fiscalCodeHash: __, ...rest } = member as any;
+    const decrypted = this.enc.decryptMember(rest);
+    if (decrypted.guardian) {
+      const { fiscalCodeHash: _gh, ...gRest } = decrypted.guardian;
+      decrypted.guardian = this.enc.decryptGuardian(gRest);
+    }
+    return decrypted;
+  }
 
   async getAll() {
     const members = await this.prisma.member.findMany({

@@ -35,7 +35,8 @@ export class StripeController {
     @Req() req: Request,
     @Headers('stripe-signature') signature: string,
   ) {
-    await this.webhook.handle(req.body as Buffer, signature);
+    const raw = (req as any).rawBody ?? req.body;
+    await this.webhook.handle(raw as Buffer, signature);
     return { received: true };
   }
 }

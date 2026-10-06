@@ -5,11 +5,13 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Request,
   UseGuards,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateSocioDto } from './dto/update-socio.dto';
 import { MembersService } from './members.service';
 
@@ -17,6 +19,14 @@ import { MembersService } from './members.service';
 @Controller('members')
 export class MembersController {
   constructor(private readonly membersService: MembersService) {}
+
+  @Post()
+  createMember(
+    @Request() req: { user: { role: UserRole } },
+    @Body() dto: CreateMemberDto,
+  ) {
+    return this.membersService.createMember(req.user.role, dto);
+  }
 
   @Get()
   getAll() {

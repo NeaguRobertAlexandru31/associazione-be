@@ -164,7 +164,7 @@ export class AuthService {
         where: { role: UserRole.SUPERADMIN, deletedAt: null },
       });
       if (count <= 1)
-        throw new ForbiddenException("Non puoi eliminare l'unico Presidente");
+        throw new ForbiddenException("Non puoi eliminare l'unico Superadmin");
     }
 
     await this.prisma.member.update({
@@ -234,7 +234,7 @@ export class AuthService {
       where: { id: requestingId },
     });
     if (!requester || requester.role !== UserRole.SUPERADMIN)
-      throw new ForbiddenException('Solo il presidente può modificare i ruoli');
+      throw new ForbiddenException('Solo il superadmin può modificare i ruoli');
 
     if (requestingId === targetId)
       throw new BadRequestException('Non puoi modificare il tuo stesso ruolo');
@@ -249,7 +249,7 @@ export class AuthService {
         where: { role: UserRole.SUPERADMIN, deletedAt: null },
       });
       if (count <= 1)
-        throw new ForbiddenException("Non puoi retrocedere l'unico Presidente");
+        throw new ForbiddenException("Non puoi retrocedere l'unico Superadmin");
     }
 
     return this.prisma.member.update({
@@ -275,7 +275,7 @@ export class AuthService {
     });
     if (!requester || requester.role !== UserRole.SUPERADMIN)
       throw new ForbiddenException(
-        'Solo il presidente può modificare i permessi',
+        'Solo il superadmin può modificare i permessi',
       );
 
     const target = await this.prisma.member.findUnique({
@@ -284,7 +284,7 @@ export class AuthService {
     if (!target) throw new NotFoundException('Membro non trovato');
     if (target.role === UserRole.SUPERADMIN)
       throw new ForbiddenException(
-        'Non puoi modificare i permessi di un altro Presidente',
+        'Non puoi modificare i permessi di un altro Superadmin',
       );
 
     return this.prisma.member.update({
