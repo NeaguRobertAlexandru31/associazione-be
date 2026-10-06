@@ -19,18 +19,18 @@ export class StripeWebhookService {
     if (event.type !== 'checkout.session.completed') return;
 
     const session = event.data.object as {
+      id?: string;
       metadata?: { memberId?: string; type?: string; frequency?: string };
       payment_status?: string;
+      mode?: string;
       amount_total?: number;
       customer_email?: string;
       customer_details?: { name?: string; email?: string };
     };
 
     this.logger.log(
-      `Webhook session: payment_status=${session.payment_status} metadata=${JSON.stringify(session.metadata)}`,
+      `Webhook session: payment_status=${session.payment_status} mode=${session.mode} metadata=${JSON.stringify(session.metadata)}`,
     );
-
-    if (session.payment_status !== 'paid') return;
 
     const { memberId, type, frequency } = session.metadata ?? {};
 
@@ -39,9 +39,13 @@ export class StripeWebhookService {
     );
 
     if (type === 'donazione') {
+      // subscription: payment_status è 'no_payment_needed' al primo evento
       await this.handleDonation(session, frequency ?? 'once');
       return;
     }
+
+    // quota associativa: richiede pagamento confermato
+    if (session.payment_status !== 'paid') return;
 
     if (memberId) {
       await this.handleMemberPayment(memberId);
@@ -77,6 +81,7 @@ export class StripeWebhookService {
 
   private async handleDonation(
     session: {
+      id?: string;
       amount_total?: number;
       customer_email?: string;
       customer_details?: { name?: string; email?: string };
@@ -89,6 +94,14 @@ export class StripeWebhookService {
     const name = session.customer_details?.name ?? 'Donatore';
     const memberId = session.metadata?.memberId;
 
+    const existing = session.id
+      ? await this.prisma.donation.findFirst({ where: { stripeSessionId: session.id } })
+      : null;
+    if (existing) {
+      this.logger.warn(`Donazione già registrata per sessione ${session.id}, skip`);
+      return;
+    }
+
     await this.prisma.donation.create({
       data: {
         amount,
@@ -96,6 +109,7 @@ export class StripeWebhookService {
         method: 'card',
         donorName: name,
         donorEmail: email,
+        stripeSessionId: session.id ?? null,
         memberId: memberId ?? null,
       },
     });
