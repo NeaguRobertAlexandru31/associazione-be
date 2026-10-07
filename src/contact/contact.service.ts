@@ -10,8 +10,32 @@ export class ContactService {
     private readonly mail: MailService,
   ) {}
 
-  create(dto: CreateContactDto) {
-    return this.prisma.contactMessage.create({ data: dto });
+  async create(dto: CreateContactDto) {
+    const message = await this.prisma.contactMessage.create({ data: dto });
+
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const tasks: Promise<void>[] = [
+      this.mail.sendContactConfirmation({
+        toName: dto.name,
+        toEmail: dto.email,
+        subject: dto.subject,
+        message: dto.message,
+      }),
+    ];
+    if (adminEmail) {
+      tasks.push(
+        this.mail.sendContactAlert({
+          fromName: dto.name,
+          fromEmail: dto.email,
+          subject: dto.subject,
+          message: dto.message,
+          adminEmail,
+        }),
+      );
+    }
+    await Promise.allSettled(tasks);
+
+    return message;
   }
 
   findAll() {

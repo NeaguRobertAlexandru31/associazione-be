@@ -775,6 +775,130 @@ export class MailService {
     );
   }
 
+  async sendContactConfirmation(opts: {
+    toName: string;
+    toEmail: string;
+    subject?: string;
+    message: string;
+  }): Promise<void> {
+    const escaped = opts.message
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    const html = this.layout(`
+      <h1 style="color:#002068;font-size:22px;font-weight:700;margin:0 0 8px;">
+        Messaggio ricevuto!
+      </h1>
+      <p style="color:#444653;font-size:14px;margin:0 0 24px;line-height:1.6;">
+        Ciao <strong>${opts.toName}</strong>, abbiamo ricevuto il tuo messaggio e ti risponderemo al più presto.
+      </p>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3fc;border-radius:12px;padding:20px;margin-bottom:28px;">
+        <tr>
+          <td>
+            ${opts.subject ? `<p style="margin:0 0 6px;font-size:12px;color:#444653;letter-spacing:1px;">OGGETTO</p><p style="margin:0 0 16px;font-size:15px;font-weight:700;color:#002068;">${opts.subject}</p>` : ''}
+            <p style="margin:0 0 6px;font-size:12px;color:#444653;letter-spacing:1px;">IL TUO MESSAGGIO</p>
+            <p style="margin:0;font-size:14px;color:#444653;line-height:1.6;white-space:pre-wrap;">${escaped}</p>
+          </td>
+        </tr>
+      </table>
+
+      <p style="color:#444653;font-size:13px;margin:0;line-height:1.6;">
+        Per qualsiasi urgenza puoi scriverci direttamente a
+        <a href="mailto:${this.from}" style="color:#002068;">${this.from}</a>.
+      </p>
+    `);
+
+    const text = `Ciao ${opts.toName},\n\nAbbiamo ricevuto il tuo messaggio e ti risponderemo al più presto.\n\n${opts.subject ? `Oggetto: ${opts.subject}\n\n` : ''}Messaggio:\n${opts.message}\n\nPer urgenze: ${this.from}`;
+
+    await this.client.send(
+      new SendEmailCommand({
+        Source: `APS Marama <${this.from}>`,
+        Destination: { ToAddresses: [`${opts.toName} <${opts.toEmail}>`] },
+        Message: {
+          Subject: {
+            Data: opts.subject ? `Re: ${opts.subject} — APS Marama` : 'Messaggio ricevuto — APS Marama',
+            Charset: 'UTF-8',
+          },
+          Body: {
+            Text: { Data: text, Charset: 'UTF-8' },
+            Html: { Data: html, Charset: 'UTF-8' },
+          },
+        },
+      }),
+    );
+  }
+
+  async sendContactAlert(opts: {
+    fromName: string;
+    fromEmail: string;
+    subject?: string;
+    message: string;
+    adminEmail: string;
+  }): Promise<void> {
+    const escaped = opts.message
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    const messagesUrl = `${this.appUrl}/admin/messages`;
+
+    const html = this.layout(`
+      <h1 style="color:#002068;font-size:22px;font-weight:700;margin:0 0 8px;">
+        Nuovo messaggio di contatto
+      </h1>
+      <p style="color:#444653;font-size:14px;margin:0 0 24px;line-height:1.6;">
+        Hai ricevuto un nuovo messaggio dal modulo contatti del sito.
+      </p>
+
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f3fc;border-radius:12px;padding:20px;margin-bottom:28px;">
+        <tr>
+          <td>
+            <p style="margin:0 0 6px;font-size:12px;color:#444653;letter-spacing:1px;">MITTENTE</p>
+            <p style="margin:0 0 4px;font-size:18px;font-weight:700;color:#002068;">${opts.fromName}</p>
+            <p style="margin:0 0 16px;font-size:13px;color:#444653;">${opts.fromEmail}</p>
+            ${opts.subject ? `<p style="margin:0 0 6px;font-size:12px;color:#444653;letter-spacing:1px;">OGGETTO</p><p style="margin:0 0 16px;font-size:15px;font-weight:700;color:#002068;">${opts.subject}</p>` : ''}
+            <p style="margin:0 0 6px;font-size:12px;color:#444653;letter-spacing:1px;">MESSAGGIO</p>
+            <p style="margin:0;font-size:14px;color:#444653;line-height:1.6;white-space:pre-wrap;">${escaped}</p>
+          </td>
+        </tr>
+      </table>
+
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <a href="${messagesUrl}" style="display:inline-block;background:#002068;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:12px;letter-spacing:0.5px;">
+              Vai ai messaggi →
+            </a>
+          </td>
+        </tr>
+      </table>
+    `);
+
+    const text = `Nuovo messaggio di contatto\n\nMittente: ${opts.fromName} <${opts.fromEmail}>\n${opts.subject ? `Oggetto: ${opts.subject}\n` : ''}\nMessaggio:\n${opts.message}\n\nRispondi dalla dashboard: ${messagesUrl}`;
+
+    await this.client.send(
+      new SendEmailCommand({
+        Source: `APS Marama <${this.from}>`,
+        ReplyToAddresses: [`${opts.fromName} <${opts.fromEmail}>`],
+        Destination: { ToAddresses: [opts.adminEmail] },
+        Message: {
+          Subject: {
+            Data: opts.subject
+              ? `Nuovo messaggio: ${opts.subject} — da ${opts.fromName}`
+              : `Nuovo messaggio da ${opts.fromName}`,
+            Charset: 'UTF-8',
+          },
+          Body: {
+            Text: { Data: text, Charset: 'UTF-8' },
+            Html: { Data: html, Charset: 'UTF-8' },
+          },
+        },
+      }),
+    );
+  }
+
   async sendReply(opts: {
     fromName: string;
     fromEmail: string;
