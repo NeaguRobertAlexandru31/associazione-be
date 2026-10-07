@@ -13,7 +13,7 @@ export class ContactService {
   async create(dto: CreateContactDto) {
     const message = await this.prisma.contactMessage.create({ data: dto });
 
-    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminEmail = process.env.ADMIN_EMAIL?.trim();
     const tasks: Promise<void>[] = [
       this.mail.sendContactConfirmation({
         toName: dto.name,

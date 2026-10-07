@@ -36,6 +36,7 @@ export class AppStack extends cdk.Stack {
           JWT_REFRESH_SECRET:        '',
           ENCRYPTION_KEY:            '',
           MAIL_FROM:                 '',
+          ADMIN_EMAIL:               '',
           CORS_ORIGIN:               '',
           DATABASE_URL:              '',
           STRIPE_SECRET_KEY:         '',
