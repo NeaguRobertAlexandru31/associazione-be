@@ -11,11 +11,12 @@ import { EventsService } from './events/events.service';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
+    bodyParser: true,
   });
+  app.useBodyParser('json', { limit: '20mb' });
+  app.useBodyParser('urlencoded', { limit: '20mb', extended: true });
 
   app.use(cookieParser());
-  app.use(require('express').json({ limit: '20mb' }));
-  app.use(require('express').urlencoded({ limit: '20mb', extended: true }));
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
   const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:4200')
