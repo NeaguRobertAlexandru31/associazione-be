@@ -25,31 +25,14 @@ export class AppStack extends cdk.Stack {
     const { stage, mediaBucket, mediaDistribution } = props;
 
     // ── Segreti applicazione ──────────────────────────────────────────────────
-    // Dopo il primo deploy, compila questi valori in AWS Secrets Manager
+    // Il secret viene importato (non gestito da CDK) — i valori si compilano
+    // manualmente su AWS Console e non vengono mai sovrascritti dai deploy.
 
-    const appSecret = new secretsmanager.Secret(this, 'AppSecret', {
-      secretName:  `/associazione/${stage}/app`,
-      description: 'Segreti applicazione NestJS',
-      generateSecretString: {
-        secretStringTemplate: JSON.stringify({
-          JWT_SECRET:                '',
-          JWT_REFRESH_SECRET:        '',
-          ENCRYPTION_KEY:            '',
-          MAIL_FROM:                 '',
-          ADMIN_EMAIL:               '',
-          CORS_ORIGIN:               '',
-          DATABASE_URL:              '',
-          STRIPE_SECRET_KEY:         '',
-          STRIPE_WEBHOOK_SECRET:     '',
-          STRIPE_PUBLISHABLE_KEY:    '',
-          TELEGRAM_BOT_TOKEN:        '',
-          TELEGRAM_CHANNEL_ID:       '',
-          TELEGRAM_ADMIN_CHANNEL_ID: '',
-          TELEGRAM_ADMIN_IDS:        '',
-        }),
-        generateStringKey: '_placeholder',
-      },
-    });
+    const appSecret = secretsmanager.Secret.fromSecretNameV2(
+      this,
+      'AppSecret',
+      `/associazione/${stage}/app`,
+    );
 
     // ── Lambda — NestJS via serverless-express ────────────────────────────────
 
