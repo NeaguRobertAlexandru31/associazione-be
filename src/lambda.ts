@@ -16,7 +16,10 @@ let cachedHandler: Handler;
 
 async function loadSecretsIntoEnv(): Promise<void> {
   const appSecretArn = process.env.APP_SECRET_ARN;
-  if (!appSecretArn) return;
+  if (!appSecretArn) {
+    console.warn('[bootstrap] APP_SECRET_ARN non impostato — segreti non caricati');
+    return;
+  }
 
   const client = new SecretsManagerClient({
     region: process.env.AWS_REGION_NAME ?? 'eu-central-1',
@@ -24,14 +27,20 @@ async function loadSecretsIntoEnv(): Promise<void> {
   const { SecretString } = await client.send(
     new GetSecretValueCommand({ SecretId: appSecretArn }),
   );
-  if (!SecretString) return;
+  if (!SecretString) {
+    console.error('[bootstrap] SecretString vuoto per ARN:', appSecretArn);
+    return;
+  }
 
   const secrets = JSON.parse(SecretString);
+  const loaded: string[] = [];
   for (const [key, value] of Object.entries(secrets)) {
     if (key !== '_placeholder' && value && !process.env[key]) {
       process.env[key] = value as string;
+      loaded.push(key);
     }
   }
+  console.log('[bootstrap] Segreti caricati:', loaded.join(', '));
 }
 
 async function bootstrap(): Promise<Handler> {
@@ -57,7 +66,11 @@ async function bootstrap(): Promise<Handler> {
     }),
   );
 
-  await app.get(EventsService).backfillSlugs();
+  try {
+    await app.get(EventsService).backfillSlugs();
+  } catch (err) {
+    console.error('[bootstrap] backfillSlugs failed (non-fatal):', err);
+  }
   await app.init();
 
   const expressApp = app.getHttpAdapter().getInstance();
