@@ -11,5 +11,6 @@ import { EventPhotosService } from './event-photos.service';
   imports: [AuthModule, PrismaModule, S3Module, WatermarkModule, MailModule],
   controllers: [EventPhotosController],
   providers: [EventPhotosService],
+  exports: [EventPhotosService],
 })
 export class EventPhotosModule {}

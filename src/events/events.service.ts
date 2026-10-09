@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { EventPhotosService } from '../event-photos/event-photos.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from '../s3/s3.service';
 import { TelegramService } from '../telegram/telegram.service';
@@ -42,6 +43,7 @@ export class EventsService {
     private readonly prisma: PrismaService,
     private readonly r2: S3Service,
     private readonly telegram: TelegramService,
+    private readonly eventPhotos: EventPhotosService,
   ) {}
 
   private buildEventNotify(event: { name: string; date: Date; time: string; location: string; description?: string | null; slug: string | null; accessType: string; cover?: string | null }) {
@@ -101,12 +103,13 @@ export class EventsService {
     const accessType = dto.accessType ?? EventAccessType.public;
     const hasCapacity = accessType === EventAccessType.limited;
 
+    const eventDate = new Date(dto.date);
     const event = await this.prisma.event.create({
       data: {
         id,
         slug,
         name: dto.name,
-        date: new Date(dto.date),
+        date: eventDate,
         time: dto.time,
         location: dto.location,
         description: dto.description,
@@ -122,7 +125,10 @@ export class EventsService {
     this.telegram.notify(this.buildEventNotify({ ...event, date: new Date(event.date) }))
       .catch(err => this.logger.error('Telegram notify failed', err));
 
-    return event;
+    // Genera il token di condivisione foto automaticamente
+    const { uploadUrl } = await this.eventPhotos.generateTokenForNewEvent(id, slug, eventDate);
+
+    return { ...event, uploadUrl };
   }
 
   async update(id: string, dto: UpdateEventDto) {
