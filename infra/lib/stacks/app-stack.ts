@@ -83,7 +83,7 @@ export class AppStack extends cdk.Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: apigw.Cors.ALL_ORIGINS,
         allowMethods: apigw.Cors.ALL_METHODS,
-        allowHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+        allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'x-upload-token'],
         allowCredentials: true,
       },
       binaryMediaTypes: ['multipart/form-data', 'image/*', 'application/octet-stream'],
@@ -115,7 +115,7 @@ export class AppStack extends cdk.Stack {
       originRequestPolicyName: `associazione-api-cookies-${stage}`,
       cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
       headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList(
-        'Content-Type', 'Origin', 'Accept',
+        'Content-Type', 'Origin', 'Accept', 'x-upload-token',
       ),
       queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
     });
