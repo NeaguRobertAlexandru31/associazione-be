@@ -267,15 +267,17 @@ export class TelegramService implements OnModuleInit {
   async notify(opts: TelegramNotifyOpts): Promise<void> {
     if (!this.token || !this.channel) return;
 
+    const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const lines = (opts.lines ?? []).map(l => l.replace(/\*(.*?)\*/g, '<b>$1</b>'));
     const body = [
-      `*${opts.title}*`,
-      ...(opts.lines ?? []),
-      ...(opts.description ? ['', opts.description] : []),
+      `<b>${escape(opts.title)}</b>`,
+      ...lines,
+      ...(opts.description ? ['', escape(opts.description)] : []),
       '',
-      `[Scopri di più](${opts.link})`,
+      `<a href="${opts.link}">Scopri di più</a>`,
     ].join('\n');
 
-    const payload = { chat_id: this.channel, parse_mode: 'Markdown' as const };
+    const payload = { chat_id: this.channel, parse_mode: 'HTML' as const };
 
     try {
       if (opts.cover) {

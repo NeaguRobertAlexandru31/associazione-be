@@ -46,10 +46,6 @@ export class EventPhotosService {
     });
     if (!event) throw new NotFoundException('Evento non trovato');
 
-    const today = new Date().toISOString().slice(0, 10);
-    const eventDay = new Date(event.date).toISOString().slice(0, 10);
-    if (eventDay > today) throw new BadRequestException('Le foto possono essere caricate solo dal giorno dell\'evento');
-
     // Restituisce il token già salvato se ancora valido
     if (event.uploadToken && event.uploadUrl) {
       try {
@@ -60,28 +56,17 @@ export class EventPhotosService {
       }
     }
 
-    const exp = Math.floor(
-      (new Date(event.date).getTime() + UPLOAD_WINDOW_DAYS * 86_400_000) / 1000,
-    );
-    const token = this.jwt.sign({ sub: event.id }, { expiresIn: exp - Math.floor(Date.now() / 1000) });
-    const uploadUrl = `/events/${slug}/upload?token=${token}`;
-
-    await this.prisma.event.update({
-      where: { slug },
-      data: { uploadToken: token, uploadUrl },
-    });
-
-    return { token, uploadUrl };
+    return this.generateTokenForNewEvent(event.id, slug, new Date(event.date));
   }
 
   async generateTokenForNewEvent(eventId: string, slug: string, eventDate: Date): Promise<{ token: string; uploadUrl: string }> {
-    const exp = Math.floor(
-      (eventDate.getTime() + UPLOAD_WINDOW_DAYS * 86_400_000) / 1000,
-    );
-    // Per eventi futuri il token scade 3 giorni dopo la data evento
-    // Se exp è già passato (evento in data odierna), aggiunge almeno 1 ora
     const now = Math.floor(Date.now() / 1000);
-    const expiresIn = Math.max(exp - now, 3600);
+    const eventExp = Math.floor((eventDate.getTime() + UPLOAD_WINDOW_DAYS * 86_400_000) / 1000);
+    // Se l'evento è futuro: scade 3 giorni dopo la data evento
+    // Se l'evento è oggi o passato: scade 3 giorni da adesso
+    const expiresIn = eventExp > now
+      ? eventExp - now
+      : UPLOAD_WINDOW_DAYS * 86_400;
     const token = this.jwt.sign({ sub: eventId }, { expiresIn });
     const uploadUrl = `/events/${slug}/upload?token=${token}`;
 
