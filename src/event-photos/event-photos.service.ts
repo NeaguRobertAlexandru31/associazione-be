@@ -10,6 +10,7 @@ import { randomBytes } from 'crypto';
 import { MailService } from '../mail/mail.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from '../s3/s3.service';
+import { TelegramService } from '../telegram/telegram.service';
 import { WatermarkService } from '../watermark/watermark.service';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -35,6 +36,7 @@ export class EventPhotosService {
     private readonly jwt: JwtService,
     private readonly watermark: WatermarkService,
     private readonly mail: MailService,
+    private readonly telegram: TelegramService,
   ) {}
 
   async generateUploadToken(slug: string): Promise<{ token: string; uploadUrl: string }> {
@@ -212,6 +214,19 @@ export class EventPhotosService {
       dashboardUrl: `${process.env.CORS_ORIGIN ?? 'https://acr-milano.it'}/dashboard/events`,
     }).catch(err => this.logger.error('sendPhotoUploadAlert failed', err));
 
+    const appUrl = process.env.APP_PUBLIC_URL ?? 'https://acr-milano.it';
+    const photoCount = urls.length === 1 ? 'una foto' : `${urls.length} foto`;
+    const memberBadge = isMember ? ' ⭐ socio' : '';
+    this.telegram.notify({
+      title: `📸 Nuove foto dall'evento!`,
+      cover: urls[0],
+      lines: [
+        `*${uploaderName.trim()}*${memberBadge} ha condiviso ${photoCount} con noi!`,
+        `🎉 *${event.name}*`,
+      ],
+      link: `${appUrl}/dashboard/events/${slug}`,
+    }).catch(err => this.logger.error('Telegram photo notify failed', err));
+
     if (email) {
       this.sendThankYouEmail({
         name: uploaderName.trim(), email, eventName: event.name,
@@ -324,6 +339,19 @@ export class EventPhotosService {
         dashboardUrl: `${process.env.CORS_ORIGIN ?? 'https://acr-milano.it'}/dashboard/events`,
       }).catch(err => this.logger.error('sendPhotoUploadAlert failed', err));
 
+      const appUrl2 = process.env.APP_PUBLIC_URL ?? 'https://acr-milano.it';
+      const photoCount2 = emailOpts.uploaded === 1 ? 'una foto' : `${emailOpts.uploaded} foto`;
+      const memberBadge2 = emailOpts.isMember ? ' ⭐ socio' : '';
+      this.telegram.notify({
+        title: `📸 Nuove foto dall'evento!`,
+        cover: urls[0],
+        lines: [
+          `*${emailOpts.name}*${memberBadge2} ha condiviso ${photoCount2} con noi!`,
+          `🎉 *${emailOpts.eventName}*`,
+        ],
+        link: `${appUrl2}/dashboard/events/${slug}`,
+      }).catch(err => this.logger.error('Telegram photo notify failed', err));
+
       // Ringraziamento all'utente solo se ha fornito l'email
       if (email) {
         this.sendThankYouEmail({ ...emailOpts, email })
@@ -357,7 +385,7 @@ export class EventPhotosService {
     return this.prisma.eventPhoto.findMany({
       where: { eventId: event.id, ...(approvedOnly ? { approved: true } : {}) },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, url: true, approved: true, isMember: true, uploaderName: true, createdAt: true },
+      select: { id: true, url: true, approved: true, isMember: true, uploaderName: true, uploaderEmail: true, createdAt: true },
     });
   }
 
