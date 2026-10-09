@@ -41,6 +41,7 @@ export class TelegramService implements OnModuleInit {
 
   onModuleInit() {
     if (!this.token) return;
+    this.setupCommands().catch(err => this.logger.error('setupCommands failed', err));
     if (process.env.NODE_ENV === 'production') {
       // In produzione (Lambda) usa webhook — il polling non è compatibile con Lambda
       const webhookUrl = `${process.env.APP_PUBLIC_URL}/telegram/webhook`;
@@ -55,6 +56,41 @@ export class TelegramService implements OnModuleInit {
         .then(() => this.startPolling())
         .catch(err => this.logger.error('deleteWebhook failed', err));
     }
+  }
+
+  private async setupCommands(): Promise<void> {
+    const base = `https://api.telegram.org/bot${this.token}`;
+
+    // Comandi visibili a tutti
+    await fetch(`${base}/setMyCommands`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        commands: [
+          { command: 'start', description: 'Avvia il bot' },
+        ],
+      }),
+    });
+
+    // Comandi extra visibili solo agli admin (scope per singolo utente)
+    const adminCommands = [
+      { command: 'start',    description: 'Avvia il bot' },
+      { command: 'checkqr', description: 'Verifica biglietti QR' },
+      { command: 'stop',    description: 'Termina la sessione di verifica' },
+    ];
+
+    await Promise.all(
+      this.adminIds.map(id =>
+        fetch(`${base}/setMyCommands`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            commands: adminCommands,
+            scope: { type: 'chat', chat_id: Number(id) },
+          }),
+        }),
+      ),
+    );
   }
 
   // ── Polling (solo locale) ────────────────────────────────────────────────────

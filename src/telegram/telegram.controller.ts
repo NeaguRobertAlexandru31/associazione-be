@@ -7,10 +7,9 @@ export class TelegramController {
 
   @Post('webhook')
   @HttpCode(200)
-  webhook(@Body() update: any): void {
-    // Risponde subito 200 a Telegram, poi processa in background.
-    // Se si aspetta il completamento, la Lambda può andare in timeout
-    // (cold start + download immagine + sharp) e Telegram riprova il webhook.
-    this.telegram.handleUpdate(update).catch(() => undefined);
+  async webhook(@Body() update: any): Promise<void> {
+    // In Lambda la risposta HTTP chiude il processo: await garantisce che
+    // handleUpdate completi prima che la Lambda risponda 200 a Telegram.
+    await this.telegram.handleUpdate(update).catch(() => undefined);
   }
 }
