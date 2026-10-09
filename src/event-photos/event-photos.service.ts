@@ -39,15 +39,14 @@ export class EventPhotosService {
     private readonly telegram: TelegramService,
   ) {}
 
-  async generateUploadToken(slug: string): Promise<{ token: string; uploadUrl: string }> {
+  async generateUploadToken(slug: string, force = false): Promise<{ token: string; uploadUrl: string }> {
     const event = await this.prisma.event.findUnique({
       where: { slug },
       select: { id: true, date: true, uploadToken: true, uploadUrl: true },
     });
     if (!event) throw new NotFoundException('Evento non trovato');
 
-    // Restituisce il token già salvato se ancora valido
-    if (event.uploadToken && event.uploadUrl) {
+    if (!force && event.uploadToken && event.uploadUrl) {
       try {
         this.jwt.verify(event.uploadToken);
         return { token: event.uploadToken, uploadUrl: event.uploadUrl };

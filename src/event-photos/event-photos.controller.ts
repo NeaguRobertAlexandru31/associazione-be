@@ -49,8 +49,8 @@ export class EventPhotosController {
   /** Genera token QR — solo admin */
   @Get('upload-token')
   @UseGuards(AdminGuard)
-  generateToken(@Param('slug') slug: string) {
-    return this.svc.generateUploadToken(slug);
+  generateToken(@Param('slug') slug: string, @Query('force') force?: string) {
+    return this.svc.generateUploadToken(slug, force === 'true');
   }
 
   /** Link di upload pubblico — nessuna auth richiesta */
