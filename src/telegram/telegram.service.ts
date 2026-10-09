@@ -177,9 +177,10 @@ export class TelegramService implements OnModuleInit {
   // ── Selezione evento ─────────────────────────────────────────────────────────
 
   private async startCheckQr(chatId: string): Promise<void> {
-    const now    = new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const events = await this.prisma.event.findMany({
-      where: { date: { gte: now } },
+      where: { date: { gte: today } },
       orderBy: { date: 'asc' },
       select: { id: true, name: true, date: true },
       take: 10,
