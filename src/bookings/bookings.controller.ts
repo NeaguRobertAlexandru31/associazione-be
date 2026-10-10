@@ -14,7 +14,7 @@ export class BookingsController {
   @Post('events/:slug/book')
   book(
     @Param('slug') slug: string,
-    @Body() dto: { name: string; email: string; phone?: string; seats: number },
+    @Body() dto: { name: string; email: string; phone?: string; seats: number; guests?: { name: string; email?: string; phone?: string }[] },
   ) {
     return this.svc.book(slug, dto);
   }

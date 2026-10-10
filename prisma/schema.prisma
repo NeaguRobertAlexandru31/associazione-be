@@ -169,6 +169,7 @@ model Booking {
   email       String
   phone       String?
   seats       Int
+  guests      Json?         // [{ name, email?, phone? }] accompagnatori
   status      BookingStatus @default(confirmed)
   position    Int?          // posizione in lista d'attesa
   cancelToken String        @unique @default(cuid())

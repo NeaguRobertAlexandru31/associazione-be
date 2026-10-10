@@ -34,7 +34,7 @@ export class BookingsService {
     );
   }
 
-  async book(slug: string, dto: { name: string; email: string; phone?: string; seats: number }) {
+  async book(slug: string, dto: { name: string; email: string; phone?: string; seats: number; guests?: { name: string; email?: string; phone?: string }[] }) {
     if (dto.seats < 1 || dto.seats > MAX_SEATS_PER_BOOKING) {
       throw new BadRequestException(`Puoi prenotare da 1 a ${MAX_SEATS_PER_BOOKING} posti per prenotazione`);
     }
@@ -70,6 +70,7 @@ export class BookingsService {
           email: dto.email,
           phone: dto.phone,
           seats: dto.seats,
+          guests: dto.guests ?? [],
           status: 'confirmed',
         },
       });
@@ -95,6 +96,7 @@ export class BookingsService {
           email: dto.email,
           phone: dto.phone,
           seats: dto.seats,
+          guests: dto.guests ?? [],
           status: 'waitlist',
           position,
         },
