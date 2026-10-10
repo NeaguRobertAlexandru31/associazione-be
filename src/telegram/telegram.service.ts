@@ -74,9 +74,13 @@ export class TelegramService implements OnModuleInit {
 
     // Comandi extra visibili solo agli admin (scope per singolo utente)
     const adminCommands = [
-      { command: 'start',    description: 'Avvia il bot' },
-      { command: 'checkqr', description: 'Verifica biglietti QR' },
-      { command: 'stop',    description: 'Termina la sessione di verifica' },
+      { command: 'start',       description: '🤖 Avvia il bot' },
+      { command: 'eventi',      description: '📅 Prossimi eventi' },
+      { command: 'soci',        description: '👥 Stato soci' },
+      { command: 'nuovisoci',   description: '🆕 Iscrizioni in attesa' },
+      { command: 'prenotazioni',description: '🎫 Prenotazioni evento' },
+      { command: 'checkqr',     description: '📷 Verifica biglietti QR' },
+      { command: 'stop',        description: '🛑 Termina sessione QR' },
     ];
 
     await Promise.all(
@@ -139,8 +143,12 @@ export class TelegramService implements OnModuleInit {
     const text   = message.text as string | undefined;
 
     if (text === '/start') {
+      const isAdmin = this.adminIds.includes(chatId);
+      const menu = isAdmin
+        ? `📅 /eventi — Prossimi eventi\n👥 /soci — Stato soci\n🆕 /nuovisoci — Iscrizioni in attesa\n🎫 /prenotazioni — Prenotazioni evento\n📷 /checkqr — Verifica biglietti QR`
+        : '';
       await this.sendMessage(chatId,
-        `Ciao! Sono lo scanner biglietti.\n\nUsa /checkqr per avviare la verifica biglietti.\n\n🆔 Il tuo chat ID è: \`${chatId}\``,
+        `Ciao! Sono il bot dell'associazione.${isAdmin ? `\n\n*Comandi disponibili:*\n${menu}` : ''}\n\n🆔 Il tuo chat ID è: \`${chatId}\``,
         'Markdown',
       );
       return;
@@ -148,6 +156,26 @@ export class TelegramService implements OnModuleInit {
 
     if (!this.adminIds.includes(chatId)) {
       await this.sendMessage(chatId, '⛔ Non sei autorizzato ad usare questo bot.');
+      return;
+    }
+
+    if (text === '/eventi') {
+      await this.cmdEventi(chatId);
+      return;
+    }
+
+    if (text === '/soci') {
+      await this.cmdSoci(chatId);
+      return;
+    }
+
+    if (text === '/nuovisoci') {
+      await this.cmdNuoviSoci(chatId);
+      return;
+    }
+
+    if (text === '/prenotazioni') {
+      await this.cmdPrenotazioni(chatId);
       return;
     }
 
@@ -171,7 +199,7 @@ export class TelegramService implements OnModuleInit {
       return;
     }
 
-    await this.sendMessage(chatId, 'Usa /checkqr per avviare la verifica biglietti.');
+    await this.sendMessage(chatId, 'Usa il menu per scegliere un\'azione.');
   }
 
   // ── Selezione evento ─────────────────────────────────────────────────────────
@@ -213,6 +241,12 @@ export class TelegramService implements OnModuleInit {
 
     if (!this.adminIds.includes(chatId)) return;
 
+    await fetch(`https://api.telegram.org/bot${this.token}/answerCallbackQuery`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ callback_query_id: callback.id }),
+    });
+
     if (data.startsWith('event:')) {
       const parts     = data.split(':');
       const eventId   = parts[1];
@@ -220,18 +254,177 @@ export class TelegramService implements OnModuleInit {
 
       this.sessions.set(chatId, { eventId, eventName });
 
-      // Risponde al callback per rimuovere il loading sul bottone
-      await fetch(`https://api.telegram.org/bot${this.token}/answerCallbackQuery`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ callback_query_id: callback.id }),
-      });
-
       await this.sendMessage(chatId,
         `✅ Evento selezionato: *${eventName}*\n\nInvia la foto del QR code del biglietto.\nUsa /stop per terminare la sessione.`,
         'Markdown',
       );
+      return;
     }
+
+    if (data.startsWith('bookings:')) {
+      const slug = data.replace('bookings:', '');
+      await this.showPrenotazioni(chatId, slug);
+      return;
+    }
+  }
+
+  // ── Comando /eventi ──────────────────────────────────────────────────────────
+
+  private async cmdEventi(chatId: string): Promise<void> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const events = await this.prisma.event.findMany({
+      where: { date: { gte: today } },
+      orderBy: { date: 'asc' },
+      select: { id: true, name: true, date: true, time: true, location: true, hasCapacity: true, capacity: true },
+      take: 10,
+    });
+
+    if (!events.length) {
+      await this.sendMessage(chatId, '📭 Nessun evento futuro trovato.');
+      return;
+    }
+
+    const confirmedSeatsMap = await Promise.all(
+      events.map(e =>
+        this.prisma.booking.aggregate({
+          where: { eventId: e.id, status: 'confirmed' },
+          _sum: { seats: true },
+        }).then(r => ({ id: e.id, occupied: r._sum.seats ?? 0 })),
+      ),
+    );
+    const seatsMap = new Map(confirmedSeatsMap.map(r => [r.id, r.occupied]));
+
+    const lines = events.map(e => {
+      const date = new Date(e.date).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+      const occupied = seatsMap.get(e.id) ?? 0;
+      const capacityInfo = e.hasCapacity && e.capacity != null
+        ? ` — ${occupied}/${e.capacity} posti`
+        : '';
+      return `📅 *${e.name}*\n${date} alle ${e.time} · ${e.location}${capacityInfo}`;
+    });
+
+    await this.sendMessage(chatId, lines.join('\n\n'), 'Markdown');
+  }
+
+  // ── Comando /soci ────────────────────────────────────────────────────────────
+
+  private async cmdSoci(chatId: string): Promise<void> {
+    const [attivi, inAttesa, inCorso, rifiutati] = await Promise.all([
+      this.prisma.member.count({ where: { status: 'attivo', deletedAt: null } }),
+      this.prisma.member.count({ where: { status: 'in_attesa_pagamento', deletedAt: null } }),
+      this.prisma.member.count({ where: { status: 'pagamento_in_corso', deletedAt: null } }),
+      this.prisma.member.count({ where: { status: 'rifiutato', deletedAt: null } }),
+    ]);
+
+    await this.sendMessage(chatId, [
+      `👥 *Stato soci*`,
+      ``,
+      `✅ Attivi: *${attivi}*`,
+      `⏳ In attesa pagamento: *${inAttesa}*`,
+      `🔄 Pagamento in corso: *${inCorso}*`,
+      `❌ Rifiutati: *${rifiutati}*`,
+      ``,
+      `📊 Totale: *${attivi + inAttesa + inCorso + rifiutati}*`,
+    ].join('\n'), 'Markdown');
+  }
+
+  // ── Comando /nuovisoci ───────────────────────────────────────────────────────
+
+  private async cmdNuoviSoci(chatId: string): Promise<void> {
+    const soci = await this.prisma.member.findMany({
+      where: { status: { in: ['in_attesa_pagamento', 'pagamento_in_corso'] }, deletedAt: null },
+      orderBy: { createdAt: 'desc' },
+      select: { firstName: true, lastName: true, email: true, status: true, createdAt: true, membershipYear: true },
+      take: 15,
+    });
+
+    if (!soci.length) {
+      await this.sendMessage(chatId, '✅ Nessuna iscrizione in attesa.');
+      return;
+    }
+
+    const lines = soci.map(s => {
+      const data = new Date(s.createdAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+      const stato = s.status === 'pagamento_in_corso' ? '🔄' : '⏳';
+      return `${stato} *${s.firstName} ${s.lastName}*\n${s.email} · ${data}${s.membershipYear ? ` · ${s.membershipYear}` : ''}`;
+    });
+
+    await this.sendMessage(chatId, `🆕 *Iscrizioni in attesa (${soci.length})*\n\n${lines.join('\n\n')}`, 'Markdown');
+  }
+
+  // ── Comando /prenotazioni ────────────────────────────────────────────────────
+
+  private async cmdPrenotazioni(chatId: string): Promise<void> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const events = await this.prisma.event.findMany({
+      where: { date: { gte: today }, hasCapacity: true },
+      orderBy: { date: 'asc' },
+      select: { slug: true, name: true, date: true },
+      take: 10,
+    });
+
+    if (!events.length) {
+      await this.sendMessage(chatId, '📭 Nessun evento con prenotazioni attive.');
+      return;
+    }
+
+    const buttons = events.map(e => [{
+      text: `${e.name} — ${new Date(e.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}`,
+      callback_data: `bookings:${e.slug}`,
+    }]);
+
+    await fetch(`https://api.telegram.org/bot${this.token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: '🎫 Seleziona l\'evento:',
+        reply_markup: { inline_keyboard: buttons },
+      }),
+    });
+  }
+
+  private async showPrenotazioni(chatId: string, slug: string): Promise<void> {
+    const event = await this.prisma.event.findUnique({
+      where: { slug },
+      select: { id: true, name: true, capacity: true },
+    });
+    if (!event) { await this.sendMessage(chatId, '⚠️ Evento non trovato.'); return; }
+
+    const [bookings, agg] = await Promise.all([
+      this.prisma.booking.findMany({
+        where: { eventId: event.id, status: { not: 'cancelled' } },
+        orderBy: [{ status: 'asc' }, { createdAt: 'asc' }],
+        select: { name: true, email: true, seats: true, status: true, position: true },
+      }),
+      this.prisma.booking.aggregate({
+        where: { eventId: event.id, status: 'confirmed' },
+        _sum: { seats: true },
+      }),
+    ]);
+
+    const occupied = agg._sum.seats ?? 0;
+    const confirmed = bookings.filter(b => b.status === 'confirmed');
+    const waitlist  = bookings.filter(b => b.status === 'waitlist');
+
+    const header = [
+      `🎫 *${event.name}*`,
+      `${occupied}/${event.capacity ?? '∞'} posti occupati`,
+      '',
+    ].join('\n');
+
+    const confLines = confirmed.map(b => `✅ ${b.name} (${b.seats} posto${b.seats > 1 ? 'i' : ''})`);
+    const waitLines = waitlist.map(b => `⏳ #${b.position} ${b.name} (${b.seats})`);
+
+    const body = [
+      header,
+      confirmed.length ? `*Confermati (${confirmed.length}):*\n${confLines.join('\n')}` : 'Nessuna prenotazione confermata.',
+      waitlist.length  ? `\n*Lista d\'attesa (${waitlist.length}):*\n${waitLines.join('\n')}` : '',
+    ].filter(Boolean).join('\n');
+
+    await this.sendMessage(chatId, body, 'Markdown');
   }
 
   // ── Scan QR ──────────────────────────────────────────────────────────────────
