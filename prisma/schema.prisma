@@ -106,6 +106,7 @@ model Member {
   privacyBase         Boolean        @default(false)
   privacyNewsletter   Boolean        @default(false)
   privacyThirdParties Boolean        @default(false)
+  cognitoSub          String?        @unique
   passwordHash        String?
   profileImage        String?
   boardRoles          String[]

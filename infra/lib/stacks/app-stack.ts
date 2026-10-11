@@ -8,6 +8,7 @@ import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as ses from 'aws-cdk-lib/aws-ses';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as cognito from 'aws-cdk-lib/aws-cognito';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
@@ -23,6 +24,36 @@ export class AppStack extends cdk.Stack {
     super(scope, id, props);
 
     const { stage, mediaBucket, mediaDistribution } = props;
+
+    // ── Cognito User Pool ─────────────────────────────────────────────────────
+
+    const userPool = new cognito.UserPool(this, 'UserPool', {
+      userPoolName:     `associazione-users-${stage}`,
+      selfSignUpEnabled: false,
+      signInAliases:    { email: true },
+      autoVerify:       { email: true },
+      passwordPolicy: {
+        minLength:        8,
+        requireUppercase: false,
+        requireDigits:    false,
+        requireSymbols:   false,
+      },
+      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      removalPolicy:   stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
+
+    const userPoolClient = userPool.addClient('BackendClient', {
+      userPoolClientName: `associazione-backend-${stage}`,
+      authFlows: {
+        userPassword:      true,
+        userSrp:           false,
+        adminUserPassword: true,
+      },
+      accessTokenValidity:  cdk.Duration.minutes(15),
+      refreshTokenValidity: cdk.Duration.days(7),
+      idTokenValidity:      cdk.Duration.minutes(15),
+      generateSecret:       false,
+    });
 
     // ── Segreti applicazione ──────────────────────────────────────────────────
     // Il secret viene importato (non gestito da CDK) — i valori si compilano
@@ -56,11 +87,14 @@ export class AppStack extends cdk.Stack {
       timeout:    cdk.Duration.seconds(30),
       memorySize: 512,
       environment: {
-        NODE_ENV:        'production',
-        APP_SECRET_ARN:  appSecret.secretArn,
-        S3_BUCKET:       mediaBucket.bucketName,
-        CDN_URL:         `https://${mediaDistribution.distributionDomainName}`,
-        AWS_REGION_NAME: this.region,
+        NODE_ENV:              'production',
+        APP_SECRET_ARN:        appSecret.secretArn,
+        S3_BUCKET:             mediaBucket.bucketName,
+        CDN_URL:               `https://${mediaDistribution.distributionDomainName}`,
+        AWS_REGION_NAME:       this.region,
+        COGNITO_USER_POOL_ID:  userPool.userPoolId,
+        COGNITO_CLIENT_ID:     userPoolClient.userPoolClientId,
+        COGNITO_REGION:        this.region,
         // APP_PUBLIC_URL viene aggiunto dopo il primo deploy (URL CloudFront)
       },
     });
@@ -71,6 +105,17 @@ export class AppStack extends cdk.Stack {
     backendFn.addToRolePolicy(new iam.PolicyStatement({
       actions:   ['ses:SendEmail', 'ses:SendRawEmail'],
       resources: ['*'],
+    }));
+
+    backendFn.addToRolePolicy(new iam.PolicyStatement({
+      actions: [
+        'cognito-idp:AdminCreateUser',
+        'cognito-idp:AdminSetUserPassword',
+        'cognito-idp:AdminDeleteUser',
+        'cognito-idp:AdminGetUser',
+        'cognito-idp:ListUsers',
+      ],
+      resources: [userPool.userPoolArn],
     }));
 
     // ── API Gateway ───────────────────────────────────────────────────────────
@@ -207,6 +252,16 @@ export class AppStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'CloudFrontDistributionId', {
       value:       distribution.distributionId,
       description: 'ID distribution CloudFront — serve per invalidare la cache',
+    });
+
+    new cdk.CfnOutput(this, 'UserPoolId', {
+      value:       userPool.userPoolId,
+      description: 'Cognito User Pool ID — copiare in environment FE e in Secrets Manager',
+    });
+
+    new cdk.CfnOutput(this, 'UserPoolClientId', {
+      value:       userPoolClient.userPoolClientId,
+      description: 'Cognito App Client ID — copiare in environment FE',
     });
   }
 }

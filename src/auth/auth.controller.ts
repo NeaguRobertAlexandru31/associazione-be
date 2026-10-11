@@ -6,12 +6,9 @@ import {
   Param,
   Patch,
   Post,
-  Req,
-  Res,
   Request,
   UseGuards,
 } from '@nestjs/common';
-import type { Request as ExpressRequest, Response } from 'express';
 import { IsArray, IsEnum, IsOptional, IsString } from 'class-validator';
 import { UserRole } from '@prisma/client';
 import { AuthService } from './auth.service';
@@ -43,19 +40,18 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('login')
-  login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
-    return this.authService.login(dto, res);
+  login(@Body() dto: LoginDto) {
+    return this.authService.login(dto);
   }
 
   @Post('refresh')
-  refresh(@Req() req: ExpressRequest) {
-    return this.authService.refresh(req.cookies?.['acr_refresh']);
+  refresh(@Body('refresh_token') refreshToken: string) {
+    return this.authService.refresh(refreshToken);
   }
 
   @Post('logout')
-  logout(@Res({ passthrough: true }) res: Response) {
-    this.authService.clearRefreshCookie(res);
-    return { ok: true };
+  logout(@Body('access_token') accessToken: string) {
+    return this.authService.logout(accessToken);
   }
 
   @Post('check-email')
@@ -80,21 +76,20 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Patch('me')
   updateProfile(
-    @Request() req: { user: { id: string } },
+    @Request() req: { user: { id: string }; headers: { authorization?: string } },
     @Body() dto: UpdateProfileDto,
   ) {
-    return this.authService.updateProfile(req.user.id, dto);
+    const accessToken = req.headers.authorization?.replace('Bearer ', '') ?? '';
+    return this.authService.updateProfile(req.user.id, dto, accessToken);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('me')
   deleteProfile(
-    @Request() req: { user: { id: string } },
-    @Body('currentPassword') currentPassword: string,
-    @Res({ passthrough: true }) res: Response,
+    @Request() req: { user: { id: string }; headers: { authorization?: string } },
   ) {
-    this.authService.clearRefreshCookie(res);
-    return this.authService.deleteProfile(req.user.id, currentPassword);
+    const accessToken = req.headers.authorization?.replace('Bearer ', '') ?? '';
+    return this.authService.deleteProfile(req.user.id, accessToken);
   }
 
   // ── Verifica tessera pubblica ─────────────────────────────────────────────
@@ -136,14 +131,10 @@ export class AuthController {
     @Param('id') targetId: string,
     @Body() dto: UpdatePermissionsDto,
   ) {
-    return this.authService.updatePermissions(
-      req.user.id,
-      targetId,
-      dto.pagePermissions,
-    );
+    return this.authService.updatePermissions(req.user.id, targetId, dto.pagePermissions);
   }
 
-  // ── Promozione ruolo (solo SUPERADMIN) ────────────────────────────────────
+  // ── Promozione ruolo (solo ADMIN/SUPERADMIN) ──────────────────────────────
 
   @UseGuards(AdminGuard)
   @Patch('members/:id/role')
@@ -152,11 +143,6 @@ export class AuthController {
     @Param('id') targetId: string,
     @Body() dto: PromoteRoleDto,
   ) {
-    return this.authService.promoteRole(
-      req.user.id,
-      targetId,
-      dto.role,
-      dto.boardRoles ?? [],
-    );
+    return this.authService.promoteRole(req.user.id, targetId, dto.role, dto.boardRoles ?? []);
   }
 }

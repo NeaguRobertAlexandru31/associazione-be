@@ -2,7 +2,7 @@ import { Injectable, ForbiddenException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
-export class SuperadminGuard extends AuthGuard('jwt') {
+export class SuperadminGuard extends AuthGuard('cognito') {
   handleRequest(err: any, user: any) {
     if (err || !user) throw err || new ForbiddenException();
     if (user.role !== 'SUPERADMIN') {
