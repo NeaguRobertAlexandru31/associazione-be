@@ -413,11 +413,12 @@ export class MailService {
   }
 
   async sendBookingConfirmation(opts: {
-    booking: { id: string; name: string; email: string; seats: number; cancelToken: string; createdAt: Date };
+    booking: { id: string; name: string; email: string; seats: number; cancelToken: string; createdAt: Date; guests?: any };
     event: { name: string; date: Date | string; time: string; location: string };
     qrUrls: string[];
   }): Promise<void> {
     const { booking, event, qrUrls } = opts;
+    const guests: { name: string }[] = Array.isArray(booking.guests) ? booking.guests : [];
     const dateStr = new Date(event.date).toLocaleDateString('it-IT', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     });
@@ -432,6 +433,9 @@ export class MailService {
     const gcalStart = toGCalDate(event.date, event.time);
     const gcalEnd   = toGCalDate(event.date, event.time, 2);
     const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.name)}&dates=${gcalStart}/${gcalEnd}&details=${encodeURIComponent(`Prenotazione: ${booking.name} — ${booking.seats} posto/i`)}&location=${encodeURIComponent(event.location)}`;
+
+    const seatHolderName = (seatIndex: number) =>
+      seatIndex === 0 ? booking.name : (guests[seatIndex - 1]?.name || booking.name);
 
     const ticketBlock = (qrUrl: string, seatIndex: number) => `
       <table width="100%" cellpadding="0" cellspacing="0" style="border:2px solid #002068;border-radius:16px;overflow:hidden;margin-bottom:${seatIndex < booking.seats - 1 ? '20px' : '28px'};">
@@ -488,7 +492,7 @@ export class MailService {
                     <tr>
                       <td>
                         <p style="margin:0;font-size:11px;color:#888;letter-spacing:1px;text-transform:uppercase;">Intestatario</p>
-                        <p style="margin:4px 0 0;font-size:14px;font-weight:600;color:#002068;">${booking.name}</p>
+                        <p style="margin:4px 0 0;font-size:14px;font-weight:600;color:#002068;">${seatHolderName(seatIndex)}</p>
                       </td>
                     </tr>
                   </table>

@@ -209,11 +209,14 @@ export class BookingsService {
       include: { event: { select: { name: true, date: true, time: true, location: true } } },
     });
     if (!booking) throw new NotFoundException('Prenotazione non trovata');
+    const guests: { name: string; email?: string }[] = Array.isArray(booking.guests) ? booking.guests as any[] : [];
+    const holderName = seatNum && seatNum > 1 ? (guests[seatNum - 2]?.name || booking.name) : booking.name;
+    const holderEmail = seatNum && seatNum > 1 ? (guests[seatNum - 2]?.email || '') : booking.email;
     return {
       valid: booking.status === 'confirmed',
       id: booking.id,
-      name: booking.name,
-      email: booking.email,
+      name: holderName,
+      email: holderEmail,
       seats: booking.seats,
       seatNum,
       status: booking.status,
