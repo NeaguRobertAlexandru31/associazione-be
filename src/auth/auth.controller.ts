@@ -97,6 +97,13 @@ export class AuthController {
     return this.authService.deleteProfile(req.user.id, currentPassword);
   }
 
+  // ── Verifica tessera pubblica ─────────────────────────────────────────────
+
+  @Get('verify/:id')
+  verifyMember(@Param('id') id: string) {
+    return this.authService.verifyMember(id);
+  }
+
   // ── Profilo anagrafico ────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)

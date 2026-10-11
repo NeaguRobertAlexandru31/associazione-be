@@ -74,13 +74,14 @@ export class TelegramService implements OnModuleInit {
 
     // Comandi extra visibili solo agli admin (scope per singolo utente)
     const adminCommands = [
-      { command: 'start',       description: '🤖 Avvia il bot' },
-      { command: 'eventi',      description: '📅 Prossimi eventi' },
-      { command: 'soci',        description: '👥 Stato soci' },
-      { command: 'nuovisoci',   description: '🆕 Iscrizioni in attesa' },
-      { command: 'prenotazioni',description: '🎫 Prenotazioni evento' },
-      { command: 'checkqr',     description: '📷 Verifica biglietti QR' },
-      { command: 'stop',        description: '🛑 Termina sessione QR' },
+      { command: 'start',        description: '🤖 Avvia il bot' },
+      { command: 'eventi',       description: '📅 Prossimi eventi' },
+      { command: 'soci',         description: '👥 Stato soci' },
+      { command: 'nuovisoci',    description: '🆕 Iscrizioni in attesa' },
+      { command: 'prenotazioni', description: '🎫 Prenotazioni evento' },
+      { command: 'checkqr',      description: '📷 Verifica biglietti QR' },
+      { command: 'checkmember',  description: '🔍 Cerca socio per nome o codice tessera' },
+      { command: 'stop',         description: '🛑 Termina sessione QR' },
     ];
 
     await Promise.all(
@@ -184,6 +185,12 @@ export class TelegramService implements OnModuleInit {
       return;
     }
 
+    if (text?.startsWith('/checkmember')) {
+      const query = text.replace('/checkmember', '').trim();
+      await this.cmdCheckMember(chatId, query);
+      return;
+    }
+
     if (text === '/stop') {
       this.sessions.delete(chatId);
       await this.sendMessage(chatId, '🛑 Sessione di verifica terminata.');
@@ -266,6 +273,72 @@ export class TelegramService implements OnModuleInit {
       await this.showPrenotazioni(chatId, slug);
       return;
     }
+  }
+
+  // ── Comando /checkmember ─────────────────────────────────────────────────────
+
+  private async cmdCheckMember(chatId: string, query: string): Promise<void> {
+    if (!query) {
+      await this.sendMessage(chatId,
+        'Uso: `/checkmember <nome>` oppure `/checkmember <codice tessera>`\n\nEsempio: `/checkmember Mario Rossi` oppure `/checkmember A3F2`',
+        'Markdown',
+      );
+      return;
+    }
+
+    // Se la query è 4 caratteri alfanumerici → cerca per codice tessera (ultime 4 cifre ID)
+    const isCode = /^[A-Za-z0-9]{4}$/.test(query);
+
+    const members = await this.prisma.member.findMany({
+      where: {
+        deletedAt: null,
+        ...(isCode
+          ? { id: { endsWith: query.toLowerCase() } }
+          : {
+              OR: [
+                { firstName: { contains: query, mode: 'insensitive' } },
+                { lastName:  { contains: query, mode: 'insensitive' } },
+              ],
+            }),
+      },
+      select: {
+        id: true, firstName: true, lastName: true,
+        email: true, category: true, status: true,
+        membershipYear: true, phone: true,
+      },
+      take: 5,
+    });
+
+    if (!members.length) {
+      await this.sendMessage(chatId, `🔍 Nessun socio trovato per: *${query}*`, 'Markdown');
+      return;
+    }
+
+    const categoryLabel = (c: string) =>
+      c === 'under26' ? 'Under 26' : c === 'sostenitore' ? 'Sostenitore' : 'Ordinario';
+
+    const statusLabel = (s: string) => {
+      if (s === 'attivo')                 return '✅ Attivo';
+      if (s === 'pagamento_in_corso')     return '🔄 Pagamento in corso';
+      if (s === 'in_attesa_pagamento')    return '⏳ In attesa di pagamento';
+      if (s === 'rifiutato')              return '❌ Rifiutato';
+      return s;
+    };
+
+    const lines = members.map(m => {
+      const year = m.membershipYear ?? '—';
+      const cardCode = `APS Marama · ${year} · ${m.id.slice(-4).toUpperCase()}`;
+      return [
+        `👤 *${m.firstName} ${m.lastName}*`,
+        `🏷 ${cardCode}`,
+        `📧 ${m.email}`,
+        `🗂 ${categoryLabel(m.category)} · ${year}`,
+        `${statusLabel(m.status)}`,
+      ].join('\n');
+    });
+
+    const header = members.length > 1 ? `🔍 *${members.length} soci trovati*\n\n` : '';
+    await this.sendMessage(chatId, header + lines.join('\n\n'), 'Markdown');
   }
 
   // ── Comando /eventi ──────────────────────────────────────────────────────────
@@ -430,17 +503,31 @@ export class TelegramService implements OnModuleInit {
   // ── Scan QR ──────────────────────────────────────────────────────────────────
 
   private async handleQrScan(chatId: string, fileId: string): Promise<void> {
+    let qrPayload: string;
+    try {
+      qrPayload = await this.decodeQrFromTelegram(fileId);
+    } catch {
+      await this.sendMessage(chatId, '⚠️ Impossibile decodificare il QR. Riprova con una foto più nitida.');
+      return;
+    }
+
+    // QR tessera socio: contiene /verifica/:id
+    const tesseraMatch = qrPayload.match(/\/verifica\/([a-f0-9-]{36})/);
+    if (tesseraMatch) {
+      await this.handleTesseraQr(chatId, tesseraMatch[1]);
+      return;
+    }
+
+    // QR biglietto evento: richiede sessione attiva
     const session = this.sessions.get(chatId);
     if (!session) {
-      await this.sendMessage(chatId, 'Usa /checkqr per selezionare prima l\'evento.');
+      await this.sendMessage(chatId, '⚠️ QR non riconosciuto come tessera socio.\n\nPer verificare biglietti eventi usa /checkqr.');
       return;
     }
 
     try {
-      const qrPayload = await this.decodeQrFromTelegram(fileId);
-      const result    = await this.bookings.verify(qrPayload);
+      const result = await this.bookings.verify(qrPayload);
 
-      // Verifica che il biglietto sia per l'evento selezionato
       if (result.eventId !== session.eventId) {
         await this.sendMessage(chatId, [
           `⚠️ *Biglietto per evento sbagliato*`,
@@ -474,11 +561,45 @@ export class TelegramService implements OnModuleInit {
       }
     } catch (err: any) {
       this.logger.error('QR scan failed', err?.message ?? err);
-      const msg = err?.status === 404
-        ? '⚠️ Prenotazione non trovata.'
-        : '⚠️ Impossibile decodificare il QR. Riprova con una foto più nitida.';
+      const msg = err?.status === 404 ? '⚠️ Prenotazione non trovata.' : '⚠️ Errore durante la verifica.';
       await this.sendMessage(chatId, msg);
     }
+  }
+
+  private async handleTesseraQr(chatId: string, memberId: string): Promise<void> {
+    const member = await this.prisma.member.findUnique({
+      where: { id: memberId, deletedAt: null },
+      select: {
+        id: true, firstName: true, lastName: true,
+        email: true, category: true, status: true, membershipYear: true,
+      },
+    });
+
+    if (!member) {
+      await this.sendMessage(chatId, '⚠️ Tessera non trovata o socio non esistente.');
+      return;
+    }
+
+    const categoryLabel = (c: string) =>
+      c === 'under26' ? 'Under 26' : c === 'sostenitore' ? 'Sostenitore' : 'Ordinario';
+
+    const year = member.membershipYear ?? new Date().getFullYear();
+    const expired = new Date() > new Date(`${year}-12-31`);
+    const cardCode = `APS Marama · ${year} · ${member.id.slice(-4).toUpperCase()}`;
+
+    const statusLine =
+      member.status === 'attivo' && !expired ? '✅ Tessera attiva' :
+      expired                                ? '❌ Tessera scaduta' :
+      member.status === 'rifiutato'          ? '❌ Socio rifiutato' :
+                                               '⏳ Tessera non ancora attiva';
+
+    await this.sendMessage(chatId, [
+      `🪪 *${member.firstName} ${member.lastName}*`,
+      `🏷 ${cardCode}`,
+      `📧 ${member.email}`,
+      `🗂 ${categoryLabel(member.category)} · ${year}`,
+      statusLine,
+    ].join('\n'), 'Markdown');
   }
 
   // ── Notifiche canale admin ───────────────────────────────────────────────────

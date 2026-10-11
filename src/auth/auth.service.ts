@@ -294,6 +294,38 @@ export class AuthService {
     });
   }
 
+  async verifyMember(id: string) {
+    const member = await this.prisma.member.findUnique({
+      where: { id, deletedAt: null },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        category: true,
+        status: true,
+        membershipYear: true,
+        profileImage: true,
+      },
+    });
+    if (!member) throw new NotFoundException('Tessera non trovata');
+
+    const year = member.membershipYear ?? new Date().getFullYear();
+    const expiry = new Date(`${year}-12-31`);
+    const now = new Date();
+    const expired = now > expiry;
+
+    return {
+      firstName: member.firstName,
+      lastName: member.lastName,
+      category: member.category,
+      status: member.status,
+      membershipYear: year,
+      expired,
+      profileImage: member.profileImage,
+      cardCode: `APS Marama · ${year} · ${member.id.slice(-4).toUpperCase()}`,
+    };
+  }
+
   async getMyTessera(id: string) {
     const member = await this.prisma.member.findUnique({
       where: { id, deletedAt: null },
