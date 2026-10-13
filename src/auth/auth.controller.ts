@@ -9,16 +9,14 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { IsArray, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsEnum, IsObject, IsOptional, IsString } from 'class-validator';
 import { UserRole } from '@prisma/client';
 import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
 import { UpdateMyMemberDto } from './dto/update-my-member.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { SuperadminGuard } from './guards/superadmin.guard';
-import { IsBoolean, IsObject } from 'class-validator';
 
 class UpdatePermissionsDto {
   @IsObject()
@@ -38,16 +36,6 @@ class PromoteRoleDto {
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
-
-  @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
-  }
-
-  @Post('refresh')
-  refresh(@Body('refresh_token') refreshToken: string) {
-    return this.authService.refresh(refreshToken);
-  }
 
   @Post('logout')
   logout(@Body('access_token') accessToken: string) {

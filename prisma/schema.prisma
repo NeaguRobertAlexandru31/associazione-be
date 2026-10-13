@@ -149,6 +149,7 @@ model Event {
   accessType   EventAccessType @default(public)
   hasCapacity  Boolean         @default(false)
   capacity     Int?
+  seo          Json?
   rsvps        EventRsvp[]
   photos       EventPhoto[]
   bookings     Booking[]
@@ -208,6 +209,7 @@ model Article {
   categories String[]
   blocks     Json     @default(dbgenerated("'[]'::jsonb"))
   cover      String?
+  seo        Json?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
@@ -220,6 +222,7 @@ model Project {
   status      ProjectStatus
   images      String[]
   cover       String?
+  seo         Json?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 }

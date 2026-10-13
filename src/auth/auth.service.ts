@@ -10,7 +10,6 @@ import {
 import {
   CognitoIdentityProviderClient,
   InitiateAuthCommand,
-  InitiateAuthCommandOutput,
   GlobalSignOutCommand,
   AdminCreateUserCommand,
   AdminSetUserPasswordCommand,
@@ -18,13 +17,10 @@ import {
   AdminDeleteUserCommand,
   ChangePasswordCommand,
   MessageActionType,
-  NotAuthorizedException,
-  UserNotFoundException,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptionService } from '../encryption/encryption.service';
-import { LoginDto } from './dto/login.dto';
 import { UpdateMyMemberDto } from './dto/update-my-member.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
@@ -54,51 +50,6 @@ export class AuthService {
     });
     this.userPoolId = process.env.COGNITO_USER_POOL_ID!;
     this.clientId   = process.env.COGNITO_CLIENT_ID!;
-  }
-
-  async login(dto: LoginDto) {
-    let cognitoRes: InitiateAuthCommandOutput;
-    try {
-      cognitoRes = await this.cognito.send(new InitiateAuthCommand({
-        AuthFlow:         'USER_PASSWORD_AUTH',
-        ClientId:         this.clientId,
-        AuthParameters: {
-          USERNAME: dto.email,
-          PASSWORD: dto.password,
-        },
-      }));
-    } catch (err) {
-      if (err instanceof NotAuthorizedException || err instanceof UserNotFoundException) {
-        throw new UnauthorizedException('Credenziali non valide');
-      }
-      throw new InternalServerErrorException('Errore di autenticazione');
-    }
-
-    const member = await this.prisma.member.findFirst({
-      where: { email: dto.email, deletedAt: null, status: { not: 'rifiutato' } },
-      select: PUBLIC_SELECT,
-    });
-    if (!member) throw new UnauthorizedException('Credenziali non valide');
-
-    return {
-      access_token:  cognitoRes.AuthenticationResult!.AccessToken,
-      refresh_token: cognitoRes.AuthenticationResult!.RefreshToken,
-      user:          this.toPublic(member),
-    };
-  }
-
-  async refresh(refreshToken: string | undefined) {
-    if (!refreshToken) throw new UnauthorizedException('Refresh token mancante');
-    try {
-      const res = await this.cognito.send(new InitiateAuthCommand({
-        AuthFlow:       'REFRESH_TOKEN_AUTH',
-        ClientId:       this.clientId,
-        AuthParameters: { REFRESH_TOKEN: refreshToken },
-      }));
-      return { access_token: res.AuthenticationResult!.AccessToken };
-    } catch {
-      throw new UnauthorizedException('Refresh token non valido o scaduto');
-    }
   }
 
   async logout(accessToken: string) {

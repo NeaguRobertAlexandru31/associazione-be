@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from '../s3/s3.service';
+import { SeoService } from '../seo/seo.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 
@@ -11,6 +12,7 @@ const ARTICLE_SELECT = {
   categories: true,
   blocks: true,
   cover: true,
+  seo: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -23,6 +25,7 @@ export class ArticlesService {
     private readonly prisma: PrismaService,
     private readonly r2: S3Service,
     private readonly telegram: TelegramService,
+    private readonly seo: SeoService,
   ) {}
 
   getAll() {
@@ -62,6 +65,23 @@ export class ArticlesService {
         ...(article.categories.length ? [`🏷 ${article.categories.join(', ')}`] : []),
       ],
     }).catch(err => this.logger.error('Telegram notify failed', err));
+
+    // Estrai testo dai blocchi per dare contesto a Gemini
+    const blocksText = Array.isArray(dto.blocks)
+      ? dto.blocks.map(b => b.paragraph).filter(Boolean).join(' ').slice(0, 500)
+      : undefined;
+
+    // Genera SEO in background — fire & forget
+    this.seo.generate({
+      type: 'article',
+      title: article.name,
+      description: blocksText,
+      categories: article.categories,
+    }).then(seoData => {
+      if (!seoData) return;
+      this.logger.log(`SEO generata per articolo "${article.name}": ${seoData.title}`);
+      return this.prisma.article.update({ where: { id: article.id }, data: { seo: seoData as unknown as Prisma.InputJsonValue } });
+    }).catch(err => this.logger.error('SEO generation failed for article', err));
 
     return article;
   }

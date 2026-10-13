@@ -1,6 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from '../s3/s3.service';
+import { SeoService } from '../seo/seo.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 
@@ -12,6 +14,7 @@ const PROJECT_SELECT = {
   status: true,
   images: true,
   cover: true,
+  seo: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -24,6 +27,7 @@ export class ProjectsService {
     private readonly prisma: PrismaService,
     private readonly r2: S3Service,
     private readonly telegram: TelegramService,
+    private readonly seo: SeoService,
   ) {}
 
   getAll() {
@@ -70,6 +74,18 @@ export class ProjectsService {
         categoryLabel[project.category] ?? project.category,
       ],
     }).catch(err => this.logger.error('Telegram notify failed', err));
+
+    // Genera SEO in background — fire & forget
+    this.seo.generate({
+      type: 'project',
+      title: project.title,
+      description: project.description,
+      categories: [project.category],
+    }).then(seoData => {
+      if (!seoData) return;
+      this.logger.log(`SEO generata per progetto "${project.title}": ${seoData.title}`);
+      return this.prisma.project.update({ where: { id: project.id }, data: { seo: seoData as unknown as Prisma.InputJsonValue } });
+    }).catch(err => this.logger.error('SEO generation failed for project', err));
 
     return project;
   }

@@ -1,8 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { EventPhotosService } from '../event-photos/event-photos.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3Service } from '../s3/s3.service';
+import { SeoService } from '../seo/seo.service';
 import { TelegramService } from '../telegram/telegram.service';
 import { CreateEventDto, EventAccessType } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -33,6 +35,7 @@ const EVENT_SELECT = {
   accessType: true,
   hasCapacity: true,
   capacity: true,
+  seo: true,
 } as const;
 
 @Injectable()
@@ -44,6 +47,7 @@ export class EventsService {
     private readonly r2: S3Service,
     private readonly telegram: TelegramService,
     private readonly eventPhotos: EventPhotosService,
+    private readonly seo: SeoService,
   ) {}
 
   private buildEventNotify(event: { name: string; date: Date; time: string; location: string; description?: string | null; slug: string | null; accessType: string; cover?: string | null }) {
@@ -124,6 +128,19 @@ export class EventsService {
 
     this.telegram.notify(this.buildEventNotify({ ...event, date: new Date(event.date) }))
       .catch(err => this.logger.error('Telegram notify failed', err));
+
+    // Genera SEO in background — fire & forget
+    this.seo.generate({
+      type: 'event',
+      title: event.name,
+      description: event.description ?? undefined,
+      location: event.location,
+      date: new Date(event.date).toLocaleDateString('it-IT'),
+    }).then(seoData => {
+      if (!seoData) return;
+      this.logger.log(`SEO generata per evento "${event.name}": ${seoData.title}`);
+      return this.prisma.event.update({ where: { id }, data: { seo: seoData as unknown as Prisma.InputJsonValue } });
+    }).catch(err => this.logger.error('SEO generation failed for event', err));
 
     // Genera il token di condivisione foto automaticamente
     const { uploadUrl } = await this.eventPhotos.generateTokenForNewEvent(id, slug, eventDate);
