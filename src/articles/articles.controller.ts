@@ -31,6 +31,12 @@ export class ArticlesController {
     return this.articlesService.create(dto);
   }
 
+  @Post(':id/seo')
+  @UseGuards(JwtAuthGuard)
+  regenerateSeo(@Param('id') id: string) {
+    return this.articlesService.regenerateSeo(id);
+  }
+
   @Delete()
   @UseGuards(JwtAuthGuard)
   deleteMany(@Body('ids') ids: string[]) {

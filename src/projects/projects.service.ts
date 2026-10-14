@@ -76,11 +76,13 @@ export class ProjectsService {
     }).catch(err => this.logger.error('Telegram notify failed', err));
 
     // Genera SEO in background — fire & forget
+    const projectImageUrls = [project.cover, ...project.images].filter(Boolean) as string[];
     this.seo.generate({
       type: 'project',
       title: project.title,
       description: project.description,
       categories: [project.category],
+      imageUrls: projectImageUrls,
     }).then(seoData => {
       if (!seoData) return;
       this.logger.log(`SEO generata per progetto "${project.title}": ${seoData.title}`);
@@ -105,6 +107,24 @@ export class ProjectsService {
       },
       select: PROJECT_SELECT,
     });
+  }
+
+  async regenerateSeo(id: string) {
+    const project = await this.prisma.project.findUnique({ where: { id }, select: PROJECT_SELECT });
+    if (!project) throw new NotFoundException('Progetto non trovato');
+
+    const imageUrls = [project.cover, ...project.images].filter(Boolean) as string[];
+    const seoData = await this.seo.generate({
+      type: 'project',
+      title: project.title,
+      description: project.description ?? undefined,
+      categories: [project.category],
+      imageUrls,
+    });
+    if (!seoData) throw new Error('Generazione SEO fallita — nessun provider disponibile');
+
+    this.logger.log(`SEO rigenerata per progetto "${project.title}": ${seoData.title}`);
+    return this.prisma.project.update({ where: { id }, data: { seo: seoData as unknown as Prisma.InputJsonValue }, select: PROJECT_SELECT });
   }
 
   async delete(id: string) {

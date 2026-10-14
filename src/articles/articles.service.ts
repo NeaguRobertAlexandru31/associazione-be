@@ -72,11 +72,13 @@ export class ArticlesService {
       : undefined;
 
     // Genera SEO in background — fire & forget
+    const articleImageUrls = [article.cover].filter(Boolean) as string[];
     this.seo.generate({
       type: 'article',
       title: article.name,
       description: blocksText,
       categories: article.categories,
+      imageUrls: articleImageUrls,
     }).then(seoData => {
       if (!seoData) return;
       this.logger.log(`SEO generata per articolo "${article.name}": ${seoData.title}`);
@@ -84,6 +86,27 @@ export class ArticlesService {
     }).catch(err => this.logger.error('SEO generation failed for article', err));
 
     return article;
+  }
+
+  async regenerateSeo(id: string) {
+    const article = await this.prisma.article.findUnique({ where: { id }, select: ARTICLE_SELECT });
+    if (!article) throw new NotFoundException('Articolo non trovato');
+
+    const blocksText = Array.isArray(article.blocks)
+      ? (article.blocks as Array<{ paragraph?: string }>).map(b => b.paragraph).filter(Boolean).join(' ').slice(0, 500)
+      : undefined;
+    const imageUrls = [article.cover].filter(Boolean) as string[];
+    const seoData = await this.seo.generate({
+      type: 'article',
+      title: article.name,
+      description: blocksText,
+      categories: article.categories,
+      imageUrls,
+    });
+    if (!seoData) throw new Error('Generazione SEO fallita — nessun provider disponibile');
+
+    this.logger.log(`SEO rigenerata per articolo "${article.name}": ${seoData.title}`);
+    return this.prisma.article.update({ where: { id }, data: { seo: seoData as unknown as Prisma.InputJsonValue }, select: ARTICLE_SELECT });
   }
 
   async delete(id: string) {

@@ -33,6 +33,12 @@ export class EventsController {
     return this.eventsService.create(dto);
   }
 
+  @Post(':id/seo')
+  @UseGuards(JwtAuthGuard)
+  regenerateSeo(@Param('id') id: string) {
+    return this.eventsService.regenerateSeo(id);
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   update(@Param('id') id: string, @Body() dto: UpdateEventDto) {

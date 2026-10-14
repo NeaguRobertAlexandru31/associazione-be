@@ -130,12 +130,14 @@ export class EventsService {
       .catch(err => this.logger.error('Telegram notify failed', err));
 
     // Genera SEO in background — fire & forget
+    const eventImageUrls = [event.cover, ...event.images].filter(Boolean) as string[];
     this.seo.generate({
       type: 'event',
       title: event.name,
       description: event.description ?? undefined,
       location: event.location,
       date: new Date(event.date).toLocaleDateString('it-IT'),
+      imageUrls: eventImageUrls,
     }).then(seoData => {
       if (!seoData) return;
       this.logger.log(`SEO generata per evento "${event.name}": ${seoData.title}`);
@@ -171,6 +173,25 @@ export class EventsService {
       },
       select: EVENT_SELECT,
     });
+  }
+
+  async regenerateSeo(id: string) {
+    const event = await this.prisma.event.findUnique({ where: { id }, select: EVENT_SELECT });
+    if (!event) throw new NotFoundException('Evento non trovato');
+
+    const imageUrls = [event.cover, ...event.images].filter(Boolean) as string[];
+    const seoData = await this.seo.generate({
+      type: 'event',
+      title: event.name,
+      description: event.description ?? undefined,
+      location: event.location,
+      date: new Date(event.date).toLocaleDateString('it-IT'),
+      imageUrls,
+    });
+    if (!seoData) throw new Error('Generazione SEO fallita — nessun provider disponibile');
+
+    this.logger.log(`SEO rigenerata per evento "${event.name}": ${seoData.title}`);
+    return this.prisma.event.update({ where: { id }, data: { seo: seoData as unknown as Prisma.InputJsonValue }, select: EVENT_SELECT });
   }
 
   async delete(id: string) {

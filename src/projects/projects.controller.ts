@@ -38,6 +38,12 @@ export class ProjectsController {
     return this.projectsService.update(id, dto);
   }
 
+  @Post(':id/seo')
+  @UseGuards(JwtAuthGuard)
+  regenerateSeo(@Param('id') id: string) {
+    return this.projectsService.regenerateSeo(id);
+  }
+
   @Delete()
   @UseGuards(JwtAuthGuard)
   deleteMany(@Body('ids') ids: string[]) {
