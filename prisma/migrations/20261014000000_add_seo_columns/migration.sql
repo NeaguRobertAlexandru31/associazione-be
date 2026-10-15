@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE "Article" ADD COLUMN IF NOT EXISTS "seo" JSONB,
+ALTER COLUMN "blocks" SET DEFAULT '[]'::jsonb;
+
+-- AlterTable
+ALTER TABLE "Event" ADD COLUMN IF NOT EXISTS "seo" JSONB;
+
+-- AlterTable
+ALTER TABLE "Project" ADD COLUMN IF NOT EXISTS "seo" JSONB;

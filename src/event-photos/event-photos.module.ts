@@ -9,7 +9,9 @@ import { EventPhotosService } from './event-photos.service';
 
 @Module({
   imports: [
-    JwtModule.register({ secret: process.env.UPLOAD_TOKEN_SECRET ?? process.env.ENCRYPTION_KEY }),
+    JwtModule.registerAsync({
+      useFactory: () => ({ secret: process.env.UPLOAD_TOKEN_SECRET ?? process.env.ENCRYPTION_KEY }),
+    }),
     PrismaModule,
     S3Module,
     WatermarkModule,
