@@ -157,7 +157,7 @@ export class EventsService {
     const accessType = dto.accessType ?? existing.accessType;
     const hasCapacity = accessType === EventAccessType.limited;
 
-    return this.prisma.event.update({
+    const updated = await this.prisma.event.update({
       where: { id },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
@@ -173,6 +173,25 @@ export class EventsService {
       },
       select: EVENT_SELECT,
     });
+
+    const imagesChanged = dto.cover !== undefined || dto.images !== undefined;
+    const seoRelevantChanged = imagesChanged || dto.name !== undefined || dto.description !== undefined || dto.location !== undefined || dto.date !== undefined;
+    if (seoRelevantChanged) {
+      const imageUrls = [updated.cover, ...updated.images].filter(Boolean) as string[];
+      this.seo.generate({
+        type: 'event',
+        title: updated.name,
+        description: updated.description ?? undefined,
+        location: updated.location,
+        date: new Date(updated.date).toLocaleDateString('it-IT'),
+        imageUrls,
+      }).then(seoData => {
+        if (!seoData) return;
+        return this.prisma.event.update({ where: { id }, data: { seo: seoData as unknown as Prisma.InputJsonValue } });
+      }).catch(err => this.logger.error('SEO re-generation failed for event update', err));
+    }
+
+    return updated;
   }
 
   async regenerateSeo(id: string) {
